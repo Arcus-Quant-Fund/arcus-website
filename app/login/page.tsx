@@ -33,7 +33,7 @@ export default function LoginPage() {
       // Show welcome animation, then navigate
       setLoading(false);
       setSuccess(true);
-      setTimeout(() => router.push("/dashboard"), 2200);
+      setTimeout(() => { window.location.href = "/dashboard"; }, 2200);
     }
   }
 
