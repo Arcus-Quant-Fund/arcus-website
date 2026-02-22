@@ -26,10 +26,33 @@ type Trade = {
 };
 
 type Props = {
-  priceData: PricePoint[]; // recent 1-min candles (fallback / not used for history)
+  priceData: PricePoint[];
   trades: Trade[];
   symbol?: string;
 };
+
+const PAGE_CANDLES = 720;          // Kraken max per request
+const INTERVAL_4H_SEC = 4 * 3600; // 4h in seconds
+
+type KrakenRow = [number, string, string, string, string, string, string, number];
+
+async function fetchKrakenPage(since: number): Promise<PricePoint[]> {
+  const url = `https://api.kraken.com/0/public/OHLC?pair=XRPUSD&interval=240&since=${since}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Kraken HTTP ${r.status}`);
+  const json = await r.json() as { error: string[]; result: Record<string, KrakenRow[]> & { last: number } };
+  if (json.error?.length > 0) throw new Error(json.error[0]);
+  const key = Object.keys(json.result).find((k) => k !== "last")!;
+  return (json.result[key] as KrakenRow[]).map((k) => ({
+    timestamp: new Date(k[0] * 1000).toISOString(),
+    open:  parseFloat(k[1]),
+    high:  parseFloat(k[2]),
+    low:   parseFloat(k[3]),
+    close: parseFloat(k[4]),
+    volume: parseFloat(k[6]),
+    vwap_ema: 0,
+  }));
+}
 
 export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -38,7 +61,7 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
   const [error, setError]     = useState("");
   const [candles, setCandles] = useState<PricePoint[]>([]);
 
-  // Fetch historical 4h candles via server-side API route (Kraken, no CORS issues)
+  // Fetch Kraken 4h candles directly from browser — parallel pages, no server proxy
   useEffect(() => {
     if (trades.length === 0) { setLoading(false); return; }
 
@@ -46,14 +69,30 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
       (min, t) => new Date(t.timestamp) < new Date(min) ? t.timestamp : min,
       trades[0].timestamp
     );
-    // Start 1 day before earliest trade so chart isn't cut off
-    const startTime = new Date(earliest).getTime() - 86_400_000;
+    const startSec = Math.floor((new Date(earliest).getTime() - 86_400_000) / 1000);
+    const nowSec   = Math.floor(Date.now() / 1000);
 
-    fetch(`/api/price-history?startTime=${startTime}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) throw new Error(data.error);
-        setCandles(data);
+    // Pre-compute page start times so we can fetch all in parallel
+    const pageStarts: number[] = [];
+    let s = startSec;
+    while (s < nowSec && pageStarts.length < 4) {
+      pageStarts.push(s);
+      s += PAGE_CANDLES * INTERVAL_4H_SEC;
+    }
+
+    Promise.all(pageStarts.map(fetchKrakenPage))
+      .then((pages) => {
+        // Merge, deduplicate, sort
+        const seen = new Set<number>();
+        const all: PricePoint[] = [];
+        for (const page of pages) {
+          for (const c of page) {
+            const t = new Date(c.timestamp).getTime();
+            if (!seen.has(t)) { seen.add(t); all.push(c); }
+          }
+        }
+        all.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        setCandles(all);
       })
       .catch((e) => setError(String(e)))
       .finally(() => setLoading(false));
@@ -63,9 +102,7 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
   useEffect(() => {
     if (!containerRef.current || candles.length === 0 || trades.length === 0) return;
 
-    const sorted = [...candles].sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
+    const sorted = candles; // already sorted ascending
     const candleTimes = sorted.map(
       (p) => Math.floor(new Date(p.timestamp).getTime() / 1000)
     );
@@ -82,7 +119,6 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
       return closest as Time;
     }
 
-    // Destroy previous chart if re-rendering
     if (chartRef.current) { chartRef.current.remove(); chartRef.current = null; }
 
     const chart = createChart(containerRef.current, {
@@ -139,7 +175,7 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
 
     const markerMap = new Map<number, SeriesMarker<Time>>();
     for (const t of sortedTrades) {
-      const snapped = snapToCandle(new Date(t.timestamp).getTime() / 1000);
+      const snapped = snapToCandle(Math.floor(new Date(t.timestamp).getTime() / 1000));
       if (snapped === null) continue;
       const isBuy = t.side?.toUpperCase() === "BUY";
       markerMap.set(snapped as number, {
@@ -171,6 +207,14 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
 
   const buys  = trades.filter(t => t.side?.toUpperCase() === "BUY").length;
   const sells = trades.filter(t => t.side?.toUpperCase() === "SELL").length;
+  const visible = candles.length > 0
+    ? trades.filter(t => {
+        const sec = Math.floor(new Date(t.timestamp).getTime() / 1000);
+        const first = Math.floor(new Date(candles[0].timestamp).getTime() / 1000);
+        const last  = Math.floor(new Date(candles[candles.length - 1].timestamp).getTime() / 1000);
+        return sec >= first && sec <= last;
+      }).length
+    : 0;
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
@@ -180,26 +224,35 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
           <p className="text-gray-500 text-xs mt-1 flex items-center gap-4">
             <span><span className="text-green-400 font-bold">▲</span> {buys} Buys</span>
             <span><span className="text-red-400 font-bold">▼</span> {sells} Sells</span>
+            {!loading && candles.length > 0 && (
+              <span className="text-gray-600">{visible}/{trades.length} trades in range</span>
+            )}
           </p>
         </div>
         <div className="text-gray-600 text-xs text-right">
-          <div>{candles.length} candles</div>
+          <div>{candles.length > 0 ? `${candles.length} candles` : ""}</div>
           <div>{trades.length} trades</div>
         </div>
       </div>
 
       {loading && (
-        <div className="h-[480px] flex items-center justify-center text-gray-500 text-sm">
+        <div className="h-[480px] flex flex-col items-center justify-center gap-3 text-gray-500 text-sm">
+          <div className="w-6 h-6 border-2 border-gray-600 border-t-gold rounded-full animate-spin" />
           Loading price history…
         </div>
       )}
-      {error && (
+      {!loading && error && (
         <div className="h-[480px] flex flex-col items-center justify-center text-red-400 text-sm gap-2">
           <span>Failed to load price data</span>
           <span className="text-red-600 text-xs font-mono">{error}</span>
         </div>
       )}
-      <div ref={containerRef} className={loading || error ? "hidden" : ""} />
+      {!loading && !error && candles.length === 0 && (
+        <div className="h-[480px] flex items-center justify-center text-gray-600 text-sm">
+          No candle data returned
+        </div>
+      )}
+      <div ref={containerRef} className={loading || error || candles.length === 0 ? "hidden" : ""} />
     </div>
   );
 }
