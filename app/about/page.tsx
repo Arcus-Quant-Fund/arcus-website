@@ -26,10 +26,9 @@ export default function AboutPage() {
               <h2 className="text-2xl font-bold text-white mb-1">Shehzad Ahmed</h2>
               <p className="text-gold text-sm font-medium mb-4">Founder & Fund Manager</p>
               <p className="text-gray-400 leading-relaxed mb-4">
-                Finance professional specialising in algorithmic trading and quantitative research. Academic
-                background in Finance and Computer Science Engineering, with a focus on computational
-                finance and high-performance computing. Career spans asset management, audit, and
-                live systematic trading across cryptocurrency and equity markets.
+                Quantitative finance professional with a Finance major and Computer Science Engineering minor
+                specialising in Big Data & High-Performance Computing. Career spans asset management,
+                audit, and live systematic trading across cryptocurrency and equity markets.
               </p>
               <p className="text-gray-400 leading-relaxed">
                 Develops and operates fully automated trading systems on cloud infrastructure — covering
