@@ -1,6 +1,14 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { supabase } from "./supabase";
+import { createClient } from "@supabase/supabase-js";
+
+// Server-side only: use service role key so anon key format issues don't affect auth
+function getServerSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -11,28 +19,17 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          console.error("[auth] missing credentials");
-          return null;
-        }
+        if (!credentials?.email || !credentials?.password) return null;
 
-        console.log("[auth] attempting sign-in for:", credentials.email);
+        const supabase = getServerSupabase();
 
         const { data, error } = await supabase.auth.signInWithPassword({
           email: credentials.email,
           password: credentials.password,
         });
 
-        if (error) {
-          console.error("[auth] supabase error:", error.message, error.status);
-          return null;
-        }
-        if (!data.user) {
-          console.error("[auth] no user returned");
-          return null;
-        }
+        if (error || !data.user) return null;
 
-        console.log("[auth] sign-in OK:", data.user.email);
         return {
           id: data.user.id,
           email: data.user.email!,
