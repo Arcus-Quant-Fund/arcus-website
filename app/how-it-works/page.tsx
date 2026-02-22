@@ -35,7 +35,7 @@ const steps = [
   {
     n: "06",
     title: "Monthly Reports & Fees",
-    desc: "At the end of each month, you receive a detailed performance report. Our performance fee (typically 25-30%) is charged only on net profits — if you don't profit, we don't charge.",
+    desc: "At the end of each month, you receive a detailed performance report. Our performance fee (50%) is charged only on net profits — if you don't profit, we don't charge.",
     detail: "No management fee. No monthly charges. Pure performance alignment.",
   },
 ];
@@ -55,7 +55,7 @@ const faqs = [
   },
   {
     q: "What is your performance fee?",
-    a: "25% on net monthly profits. No management fee, no fixed charges. We only earn when you earn.",
+    a: "50% on net monthly profits. No management fee, no fixed charges. We only earn when you earn.",
   },
   {
     q: "How do I monitor my account?",
@@ -101,7 +101,7 @@ export default function HowItWorksPage() {
             {[
               { label: "Management Fee", value: "0%" },
               { label: "Monthly Charge", value: "$0" },
-              { label: "Performance Fee", value: "25%" },
+              { label: "Performance Fee", value: "50%" },
               { label: "Charged On", value: "Net Profit" },
             ].map((f) => (
               <div key={f.label} className="text-center p-4 bg-gray-800/50 rounded-xl">

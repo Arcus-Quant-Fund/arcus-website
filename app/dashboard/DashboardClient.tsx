@@ -210,6 +210,12 @@ export default function DashboardClient({ session, botState, priceData, trades, 
     }
   }
 
+  // Duration: first trade → now
+  const firstTradeDate = closedTrades.length > 0 ? new Date(closedTrades[0].timestamp) : null;
+  const monthsActive = firstTradeDate
+    ? Math.max(1, Math.round((Date.now() - firstTradeDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44)))
+    : null;
+
   // Cumulative PnL chart (chronological)
   let running = 0;
   const cumulativePnlData = closedTrades.map((t, i) => {
@@ -561,7 +567,9 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                   {roiPct != null ? `${roiPct >= 0 ? "+" : ""}${roiPct.toFixed(2)}%` : "N/A"}
                 </div>
                 <div className="text-white text-sm font-medium">ROI</div>
-                <div className="text-gray-500 text-xs mt-0.5">Across {pairCount} completed trades</div>
+                <div className="text-gray-500 text-xs mt-0.5">
+                  Across {pairCount} trades{monthsActive != null ? ` · ${monthsActive} month${monthsActive !== 1 ? "s" : ""}` : ""}
+                </div>
                 {/* Hover tooltip */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-gray-800 border border-gray-700 rounded-xl p-4 text-left text-xs text-gray-300 shadow-xl z-50 hidden group-hover:block pointer-events-none">
                   <div className="font-semibold text-white mb-2">How ROI is calculated</div>
