@@ -4,7 +4,7 @@ import { TrendingUp, Shield, BarChart2, ArrowRight, Zap, Lock } from "lucide-rea
 const stats = [
   { label: "AUM (Pilot)", value: "$50k+" },
   { label: "Live Trading", value: "18+ mo" },
-  { label: "Strategy Type", value: "Quant" },
+  { label: "Sharpe Ratio", value: "3.36" },
   { label: "Fee Model", value: "Perf. Only" },
 ];
 

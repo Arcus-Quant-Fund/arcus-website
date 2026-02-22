@@ -13,12 +13,12 @@ const strategies = [
     description:
       "Directional Change (DC) algorithm combined with VWAP and EMA filters. Captures momentum moves in high-liquidity crypto pairs. Designed to cut losers fast and let winners run — low win rate but high profit factor.",
     metrics: [
-      { label: "Profit Factor", value: "2.1+" },
-      { label: "Avg Trade", value: "0.4%" },
+      { label: "Sharpe Ratio", value: "3.36" },
+      { label: "Profit Factor", value: "1.77" },
       { label: "Win Rate", value: "38%" },
-      { label: "Max DD", value: "<15%" },
+      { label: "Live Since", value: "18+ mo" },
     ],
-    note: "Live on XRP/USDT with isolated margin. 18+ months live trading.",
+    note: "Live on XRP/USDT with isolated margin. 1,017+ trades logged over 90-day window.",
   },
   {
     icon: <Activity size={24} className="text-gold" />,
@@ -29,7 +29,7 @@ const strategies = [
     timeframe: "Daily",
     status: "Research",
     description:
-      "Based on Dr. Bhuyan's academic research on open interest as a hidden trend signal. Identifies directional bias from option OI distribution and trades the underlying. Strong long bias (73%) aligned with equity drift.",
+      "Based on peer-reviewed academic research on open interest as a hidden trend signal. Identifies directional bias from option OI distribution and trades the underlying. Strong long bias (73%) aligned with equity drift.",
     metrics: [
       { label: "Long Bias", value: "73%" },
       { label: "Basis", value: "OI Signal" },
@@ -82,7 +82,7 @@ export default function StrategiesPage() {
         {/* Disclaimer */}
         <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4 mb-10">
           <p className="text-yellow-500/80 text-sm">
-            <strong>Disclaimer:</strong> Performance metrics shown are based on backtests and live paper trading.
+            <strong>Disclaimer:</strong> Sharpe and Profit Factor figures for DC-VWAP are from live trading. Other metrics are from backtests and research.
             Past performance does not guarantee future results. Trading involves significant risk of loss.
           </p>
         </div>

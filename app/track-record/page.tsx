@@ -34,11 +34,27 @@ export default function TrackRecordPage() {
           </div>
         </div>
 
+        {/* Live performance metrics */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            { value: "3.36", label: "Sharpe Ratio", sub: "Live trading" },
+            { value: "1.77", label: "Profit Factor", sub: "Live trading" },
+            { value: "1,017+", label: "Trades (90-day)", sub: "XRP/USDT" },
+            { value: "18+ mo", label: "Live History", sub: "Real capital" },
+          ].map((s) => (
+            <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
+              <div className="text-2xl font-bold text-gold mb-1">{s.value}</div>
+              <div className="text-white text-sm font-medium mb-0.5">{s.label}</div>
+              <div className="text-gray-500 text-xs">{s.sub}</div>
+            </div>
+          ))}
+        </div>
+
         {/* What we have */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-14">
           {[
             { value: "18+", label: "Months Live Trading", sub: "Real capital, live markets" },
-            { value: "$50k", label: "Pilot AUM", sub: "Dr. Bhuyan's account" },
+            { value: "$50k+", label: "Pilot AUM", sub: "Active pilot account" },
             { value: "Q3 2026", label: "Full Data Release", sub: "6-month verified period" },
           ].map((s) => (
             <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
