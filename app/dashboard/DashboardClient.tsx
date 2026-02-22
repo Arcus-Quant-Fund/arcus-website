@@ -544,7 +544,7 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                   {roiPct != null ? `${roiPct >= 0 ? "+" : ""}${roiPct.toFixed(2)}%` : "N/A"}
                 </div>
                 <div className="text-white text-sm font-medium">ROI</div>
-                <div className="text-gray-500 text-xs mt-0.5">On {fmt(totalInvested, 2, "$")} deployed ({leverage}×)</div>
+                <div className="text-gray-500 text-xs mt-0.5">Across {pairCount} completed trades</div>
               </div>
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
                 <div className={`text-3xl font-bold mb-1 ${totalPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
