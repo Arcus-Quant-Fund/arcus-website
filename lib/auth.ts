@@ -1,14 +1,5 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { createClient } from "@supabase/supabase-js";
-
-// Server-side only: use service role key so anon key format issues don't affect auth
-function getServerSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -21,27 +12,36 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const supabase = getServerSupabase();
+        // Call Supabase Auth REST API directly — bypasses JS client key format issues
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=password`,
+          {
+            method: "POST",
+            headers: {
+              "apikey": process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
+          }
+        );
 
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: credentials.email,
-          password: credentials.password,
-        });
+        const data = await res.json();
 
-        if (error || !data.user) return null;
+        if (!res.ok || !data.user) return null;
 
         return {
           id: data.user.id,
-          email: data.user.email!,
-          name: data.user.user_metadata?.name ?? data.user.email!,
+          email: data.user.email,
+          name: data.user.user_metadata?.name ?? data.user.email,
         };
       },
     }),
   ],
   session: { strategy: "jwt" },
-  pages: {
-    signIn: "/login",
-  },
+  pages: { signIn: "/login" },
   callbacks: {
     async jwt({ token, user }) {
       if (user) token.id = user.id;
