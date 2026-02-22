@@ -26,14 +26,16 @@ export default function AboutPage() {
               <h2 className="text-2xl font-bold text-white mb-1">Shehzad Ahmed</h2>
               <p className="text-gold text-sm font-medium mb-4">Founder & Fund Manager</p>
               <p className="text-gray-400 leading-relaxed mb-4">
-                Quantitative researcher and algorithmic trader with 18+ months of live trading experience across
-                crypto and equity markets. Builds and deploys fully automated trading systems grounded in
-                statistical research and robust risk management.
+                Finance professional specialising in algorithmic trading and quantitative research. BBA in Finance
+                with a Computer Science Engineering minor (Big Data & High-Performance Computing) from
+                Independent University Bangladesh. Background spans asset management, audit, and
+                live systematic trading across cryptocurrency and equity markets.
               </p>
               <p className="text-gray-400 leading-relaxed">
-                Background in quantitative finance research spanning crypto derivatives and market microstructure.
-                Focused on building institutional-grade strategies grounded in statistical rigor and
-                academic literature.
+                Develops and operates fully automated trading systems on cloud infrastructure — covering
+                strategy research, backtesting, execution, and risk management. Research in financial market
+                microstructure and algorithmic trading currently under peer review at an international
+                finance journal.
               </p>
             </div>
           </div>
