@@ -30,9 +30,9 @@ export default function AboutPage() {
                 statistical research and robust risk management.
               </p>
               <p className="text-gray-400 leading-relaxed">
-                Co-author of research papers on crypto derivatives (perpetual futures) and market microstructure
-                (order flow auctions). CFA Level 1 candidate. Academic advisor: Dr. Rafiqul Bhuyan (PhD, tenured
-                professor, US academic).
+                Background in quantitative finance research spanning crypto derivatives and market microstructure.
+                Focused on building institutional-grade strategies grounded in statistical rigor and
+                academic literature.
               </p>
             </div>
           </div>
@@ -53,8 +53,8 @@ export default function AboutPage() {
             },
             {
               icon: <Award className="text-gold" size={20} />,
-              title: "CFA Candidate",
-              desc: "Formal finance training alongside quantitative practice.",
+              title: "Quant Research",
+              desc: "Strategies grounded in academic finance literature and statistical analysis.",
             },
           ].map((c) => (
             <div key={c.title} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
@@ -80,8 +80,8 @@ export default function AboutPage() {
               trade-execution API keys that have no withdrawal permissions.
             </p>
             <p>
-              Currently in pilot phase managing Dr. Rafiqul Bhuyan's account (~$50k) with a target of
-              $150-200k AUM across 3-5 clients by mid-2026.
+              Currently in pilot phase with live capital deployed, targeting $150-200k AUM across
+              3-5 clients by mid-2026.
             </p>
           </div>
         </div>
