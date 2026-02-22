@@ -476,7 +476,6 @@ export default function DashboardClient({ session, botState, priceData, trades, 
         {tab === "trades" && (
           <>
             <TradeHistoryChart
-              priceData={priceData}
               trades={trades}
               symbol={botState?.symbol ?? "XRPUSDT"}
             />
@@ -508,8 +507,8 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                       <th className="pb-3 pr-4">Qty</th>
                       <th className="pb-3 pr-4">Amount</th>
                       <th className="pb-3 pr-4">PnL</th>
-                      <th className="pb-3 pr-4 text-gray-400">PnL % <span className="text-gray-600 font-normal">(position)</span></th>
-                      <th className="pb-3 pr-4 text-white">PnL % <span className="text-gray-400 font-normal">({leverage}× margin)</span></th>
+                      <th className="pb-3 pr-4 text-gray-400">Price Move <span className="text-gray-600 font-normal">(unleveraged)</span></th>
+                      <th className="pb-3 pr-4 text-white">Return <span className="text-gray-400 font-normal">(on margin)</span></th>
                       <th className="pb-3">Reason</th>
                     </tr>
                   </thead>
@@ -530,12 +529,14 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                         <td className={`py-3 pr-4 font-semibold text-sm ${pnlClass(t.pnl)}`}>
                           {t.pnl != null ? fmt(t.pnl, 2, "$") : "—"}
                         </td>
-                        <td className={`py-3 pr-4 text-xs ${pnlClass(t.pnl_percent)}`}>
-                          {t.pnl_percent != null ? `${fmt(t.pnl_percent, 2)}%` : "—"}
+                        <td className={`py-3 pr-4 text-xs ${pnlClass(t.pnl)}`}>
+                          {t.pnl != null && t.amount
+                            ? `${(t.pnl / t.amount * 100) >= 0 ? "+" : ""}${(t.pnl / t.amount * 100).toFixed(2)}%`
+                            : "—"}
                         </td>
                         <td className={`py-3 pr-4 text-xs font-semibold ${pnlClass(t.pnl)}`}>
                           {t.pnl != null && t.amount
-                            ? `${((t.pnl / (t.amount / leverage)) * 100) >= 0 ? "+" : ""}${((t.pnl / (t.amount / leverage)) * 100).toFixed(2)}%`
+                            ? `${(t.pnl / (t.amount / leverage) * 100) >= 0 ? "+" : ""}${(t.pnl / (t.amount / leverage) * 100).toFixed(2)}%`
                             : "—"}
                         </td>
                         <td className="py-3 text-gray-500 text-xs">{t.reason ?? "—"}</td>
