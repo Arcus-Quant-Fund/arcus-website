@@ -10,6 +10,7 @@ import { LogOut } from "lucide-react";
 import dynamic from "next/dynamic";
 
 const TradingChart = dynamic(() => import("@/components/TradingChart"), { ssr: false });
+const TradeHistoryChart = dynamic(() => import("@/components/TradeHistoryChart"), { ssr: false });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -473,6 +474,12 @@ export default function DashboardClient({ session, botState, priceData, trades, 
 
         {/* ══ TRADE HISTORY TAB ══ */}
         {tab === "trades" && (
+          <>
+            <TradeHistoryChart
+              trades={trades}
+              symbol={botState?.symbol ?? "XRPUSDT"}
+            />
+
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-white font-bold">Trade History</h2>
@@ -532,6 +539,7 @@ export default function DashboardClient({ session, botState, priceData, trades, 
               </div>
             )}
           </div>
+          </>
         )}
 
         {/* ══ PERFORMANCE TAB ══ */}
