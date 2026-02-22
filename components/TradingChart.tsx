@@ -190,10 +190,6 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
       hline("#3b82f6", "Entry Price", botState.entry_price, 2);
     }
 
-    // Last DC price (cyan dotted) — price at which last directional change occurred
-    if (botState?.last_dc_price) {
-      hline("#06b6d4", "DC Price", botState.last_dc_price, 1);
-    }
 
     // ── Buy / Sell trade markers ──────────────────────────────────────────────
     // Each trade is snapped to its nearest candle bar.
@@ -264,7 +260,6 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
               : <span className="text-green-400">┄ Buy Trigger +{(BUY_THRESHOLD * 100).toFixed(1)}%</span>
             }
             {botState?.position === "long" && <span className="text-blue-400">━ Entry Price</span>}
-            {botState?.last_dc_price && <span className="text-cyan-400">┄ DC Price</span>}
           </p>
         </div>
         <div className="text-gray-600 text-xs text-right">
