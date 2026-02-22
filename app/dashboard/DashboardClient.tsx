@@ -3,9 +3,12 @@ import { useState } from "react";
 import { signOut } from "next-auth/react";
 import {
   ComposedChart, Line, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid, Legend, Area, AreaChart, Cell,
+  ResponsiveContainer, CartesianGrid, Area, AreaChart, Cell,
 } from "recharts";
 import { LogOut } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const TradingChart = dynamic(() => import("@/components/TradingChart"), { ssr: false });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -386,29 +389,13 @@ export default function DashboardClient({ session, botState, priceData, trades, 
               </div>
             </div>
 
-            {/* Price Chart */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
-              <h3 className="text-white font-semibold mb-5">
-                {botState?.symbol ?? "XRPUSDT"} — Price & VWAP EMA
-              </h3>
-              {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={280}>
-                  <ComposedChart data={chartData} margin={{ left: 10, right: 10 }}>
-                    <CartesianGrid stroke="#1f2937" strokeDasharray="3 3" />
-                    <XAxis dataKey="time" tick={{ fill: "#6b7280", fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                    <YAxis yAxisId="price" tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} width={65} tickFormatter={(v) => `$${v}`} domain={["auto", "auto"]} />
-                    <YAxis yAxisId="vol" orientation="right" tick={{ fill: "#6b7280", fontSize: 10 }} axisLine={false} tickLine={false} width={50} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip contentStyle={{ background: "#111827", border: "1px solid #1f2937", borderRadius: 8 }} labelStyle={{ color: "#9ca3af", fontSize: 11 }} itemStyle={{ fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 12, color: "#9ca3af" }} />
-                    <Bar yAxisId="vol" dataKey="volume" fill="#374151" opacity={0.4} name="Volume" />
-                    <Line yAxisId="price" type="monotone" dataKey="close" stroke="#f8ac07" strokeWidth={1.5} dot={false} name="Price" />
-                    <Line yAxisId="price" type="monotone" dataKey="vwap_ema" stroke="#f97316" strokeWidth={1.5} dot={false} name="VWAP EMA" strokeDasharray="4 2" />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[280px] flex items-center justify-center text-gray-600 text-sm">No price data yet</div>
-              )}
-            </div>
+            {/* Price Chart — candlestick matching Streamlit dashboard */}
+            <TradingChart
+              priceData={priceData}
+              trades={trades}
+              botState={botState}
+              symbol={botState?.symbol ?? "XRPUSDT"}
+            />
 
             {/* Balance Chart */}
             {balanceChartData.length > 1 && (
