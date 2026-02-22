@@ -14,11 +14,6 @@ export default function LoginPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  // Extract a display name from email (e.g. "shehzadahmed@..." → "Shehzad")
-  const displayName = email
-    ? email.split("@")[0].split(/[._-]/)[0].replace(/\d+/g, "")
-        .replace(/^./, (c) => c.toUpperCase())
-    : "Sir";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,9 +47,13 @@ export default function LoginPage() {
             <CheckCircle2 size={52} className="text-green-400 animate-scale-in" strokeWidth={1.5} />
             <div className="text-center">
               <p className="text-gray-500 text-sm tracking-widest uppercase mb-1">Welcome back</p>
-              <h1 className="text-3xl font-bold text-white">{displayName}</h1>
+              <h1 className="text-2xl font-bold text-white">{email}</h1>
             </div>
-            <div className="flex items-center gap-2 text-gray-500 text-sm">
+            {/* Progress bar */}
+            <div className="w-64 h-1 bg-gray-800 rounded-full overflow-hidden mt-2">
+              <div className="h-full bg-gold rounded-full animate-progress" />
+            </div>
+            <div className="flex items-center gap-2 text-gray-500 text-sm -mt-2">
               <Loader2 size={14} className="animate-spin" />
               Loading your dashboard…
             </div>
