@@ -38,7 +38,7 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
   const [error, setError]     = useState("");
   const [candles, setCandles] = useState<PricePoint[]>([]);
 
-  // Fetch Binance historical 4h candles from earliest trade → now
+  // Fetch Binance historical 4h candles directly from browser (avoids server IP blocks)
   useEffect(() => {
     if (trades.length === 0) { setLoading(false); return; }
 
@@ -49,10 +49,27 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
     // Start 1 day before earliest trade so chart isn't cut off
     const startTime = new Date(earliest).getTime() - 86_400_000;
 
-    fetch(`/api/price-history?symbol=${symbol}&startTime=${startTime}&interval=4h`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) throw new Error(data.error);
+    const url = new URL("https://api.binance.com/api/v3/klines");
+    url.searchParams.set("symbol", symbol);
+    url.searchParams.set("interval", "4h");
+    url.searchParams.set("limit", "1500");
+    url.searchParams.set("startTime", String(startTime));
+
+    fetch(url.toString())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((raw: unknown[][]) => {
+        const data: PricePoint[] = raw.map((k) => ({
+          timestamp: new Date(k[0] as number).toISOString(),
+          open:  parseFloat(k[1] as string),
+          high:  parseFloat(k[2] as string),
+          low:   parseFloat(k[3] as string),
+          close: parseFloat(k[4] as string),
+          volume: parseFloat(k[5] as string),
+          vwap_ema: 0,
+        }));
         setCandles(data);
       })
       .catch((e) => setError(String(e)))
@@ -194,8 +211,9 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
         </div>
       )}
       {error && (
-        <div className="h-[480px] flex items-center justify-center text-red-400 text-sm">
-          Failed to load price data
+        <div className="h-[480px] flex flex-col items-center justify-center text-red-400 text-sm gap-2">
+          <span>Failed to load price data</span>
+          <span className="text-red-600 text-xs font-mono">{error}</span>
         </div>
       )}
       <div ref={containerRef} className={loading || error ? "hidden" : ""} />
