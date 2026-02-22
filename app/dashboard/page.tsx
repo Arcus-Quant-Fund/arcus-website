@@ -27,13 +27,13 @@ export default async function DashboardPage() {
     .eq("client_id", botId)
     .single();
 
-  // 3 — Fetch price data (last 2000 candles for chart history)
+  // 3 — Fetch all available candles (backfilled to full bot lifetime)
   const { data: priceRows } = await supabase
     .from("price_data")
     .select("timestamp, open, high, low, close, volume, vwap, vwap_ema")
     .eq("client_id", botId)
     .order("timestamp", { ascending: false })
-    .limit(2000);
+    .limit(50000);
 
   // 4 — Fetch trade log (most recent 500)
   const { data: tradeRows } = await supabase
