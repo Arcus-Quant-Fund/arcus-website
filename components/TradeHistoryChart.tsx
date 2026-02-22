@@ -5,11 +5,16 @@ import {
   createChart,
   ColorType,
   CrosshairMode,
-  LineStyle,
   type IChartApi,
   type SeriesMarker,
   type Time,
 } from "lightweight-charts";
+
+type PricePoint = {
+  timestamp: string;
+  open: number; high: number; low: number; close: number;
+  volume: number; vwap_ema: number;
+};
 
 type Trade = {
   trade_id: string;
@@ -21,21 +26,34 @@ type Trade = {
 };
 
 type Props = {
+  priceData: PricePoint[];
   trades: Trade[];
   symbol?: string;
 };
 
-export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props) {
+export default function TradeHistoryChart({ priceData, trades, symbol = "XRPUSDT" }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current || trades.length === 0) return;
+    if (!containerRef.current || priceData.length === 0) return;
 
-    // All trades sorted chronologically
-    const sorted = [...trades].sort(
+    const sorted = [...priceData].sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
+
+    // Candle times in seconds for snapping trade markers
+    const candleTimes = sorted.map((p) => new Date(p.timestamp).getTime() / 1000);
+
+    function snapToCandle(tradeSec: number): Time | null {
+      let closest = -1;
+      let minDiff = Infinity;
+      for (const ct of candleTimes) {
+        const d = Math.abs(ct - tradeSec);
+        if (d < minDiff) { minDiff = d; closest = ct; }
+      }
+      return minDiff <= 600 ? (closest as Time) : null;
+    }
 
     const chart = createChart(containerRef.current, {
       layout: {
@@ -47,65 +65,92 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
         horzLines: { color: "#1f2937" },
       },
       crosshair: { mode: CrosshairMode.Normal },
-      rightPriceScale: { borderColor: "#374151" },
-      timeScale: { borderColor: "#374151", timeVisible: true, secondsVisible: false },
+      rightPriceScale: {
+        borderColor: "#374151",
+        scaleMargins: { top: 0.08, bottom: 0.28 },
+      },
+      timeScale: { borderColor: "#374151", timeVisible: true, secondsVisible: false, rightOffset: 5 },
       width: containerRef.current.clientWidth,
-      height: 420,
+      height: 480,
     });
     chartRef.current = chart;
 
-    // Price line — connects every trade in sequence to show price path
-    const priceLine = chart.addLineSeries({
-      color: "#374151",
-      lineWidth: 1,
-      lineStyle: LineStyle.Solid,
-      priceScaleId: "right",
-      lastValueVisible: false,
-      priceLineVisible: false,
-      crosshairMarkerVisible: false,
+    // ── Candlestick series ────────────────────────────────────────────────────
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: "#22c55e",
+      downColor: "#ef4444",
+      borderUpColor: "#22c55e",
+      borderDownColor: "#ef4444",
+      wickUpColor: "#22c55e",
+      wickDownColor: "#ef4444",
     });
 
-    priceLine.setData(
-      sorted.map((t) => ({
-        time: (new Date(t.timestamp).getTime() / 1000) as Time,
-        value: t.price,
+    candleSeries.setData(
+      sorted.map((p) => ({
+        time: (new Date(p.timestamp).getTime() / 1000) as Time,
+        open: p.open, high: p.high, low: p.low, close: p.close,
       }))
     );
 
-    // Buy / Sell markers on the price line
-    const markers: SeriesMarker<Time>[] = sorted.map((t) => {
-      const isBuy = t.side?.toUpperCase() === "BUY";
-      return {
-        time: (new Date(t.timestamp).getTime() / 1000) as Time,
-        position: isBuy ? "belowBar" : "aboveBar",
-        color: isBuy ? "#22c55e" : "#ef4444",
-        shape: isBuy ? "arrowUp" : "arrowDown",
-        text: isBuy
-          ? `BUY $${t.price?.toFixed(4) ?? ""}`
-          : t.pnl != null
-          ? `SELL ${t.pnl >= 0 ? "+" : ""}$${t.pnl.toFixed(2)}`
-          : `SELL $${t.price?.toFixed(4) ?? ""}`,
-        size: 1,
-      } as SeriesMarker<Time>;
+    // ── Volume histogram ──────────────────────────────────────────────────────
+    const volumeSeries = chart.addHistogramSeries({
+      priceFormat: { type: "volume" },
+      priceScaleId: "volume",
     });
+    chart.priceScale("volume").applyOptions({
+      scaleMargins: { top: 0.78, bottom: 0 },
+    });
+    volumeSeries.setData(
+      sorted.map((p) => ({
+        time: (new Date(p.timestamp).getTime() / 1000) as Time,
+        value: p.volume,
+        color: p.close >= p.open ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)",
+      }))
+    );
 
-    if (markers.length > 0) {
-      priceLine.setMarkers(markers);
+    // ── Buy / Sell markers snapped to nearest candle ───────────────────────
+    if (trades.length > 0) {
+      const sortedTrades = [...trades].sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+
+      const markerMap = new Map<number, SeriesMarker<Time>>();
+
+      for (const t of sortedTrades) {
+        const tradeSec = new Date(t.timestamp).getTime() / 1000;
+        const snapped = snapToCandle(tradeSec);
+        if (snapped === null) continue;
+
+        const isBuy = t.side?.toUpperCase() === "BUY";
+        markerMap.set(snapped as number, {
+          time: snapped,
+          position: isBuy ? "belowBar" : "aboveBar",
+          color: isBuy ? "#22c55e" : "#ef4444",
+          shape: isBuy ? "arrowUp" : "arrowDown",
+          text: isBuy
+            ? "BUY"
+            : t.pnl != null
+            ? `SELL ${t.pnl >= 0 ? "+" : ""}$${t.pnl.toFixed(1)}`
+            : "SELL",
+          size: 1.5,
+        } as SeriesMarker<Time>);
+      }
+
+      const markers = [...markerMap.values()].sort(
+        (a, b) => (a.time as number) - (b.time as number)
+      );
+      if (markers.length > 0) candleSeries.setMarkers(markers);
     }
 
-    // Resize observer
+    // ── Responsive resize ─────────────────────────────────────────────────────
     const observer = new ResizeObserver(() => {
-      if (containerRef.current) {
+      if (containerRef.current)
         chart.applyOptions({ width: containerRef.current.clientWidth });
-      }
     });
     observer.observe(containerRef.current);
 
-    return () => {
-      observer.disconnect();
-      chart.remove();
-    };
-  }, [trades]);
+    return () => { observer.disconnect(); chart.remove(); };
+  }, [priceData, trades]);
 
   const buys  = trades.filter(t => t.side?.toUpperCase() === "BUY").length;
   const sells = trades.filter(t => t.side?.toUpperCase() === "SELL").length;
@@ -114,19 +159,21 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-white font-semibold">{symbol} — All Bot Trades</h3>
+          <h3 className="text-white font-semibold">{symbol} — Full Trade History</h3>
           <p className="text-gray-500 text-xs mt-1 flex items-center gap-4">
             <span><span className="text-green-400 font-bold">▲</span> {buys} Buys</span>
             <span><span className="text-red-400 font-bold">▼</span> {sells} Sells</span>
-            <span className="text-gray-600">Price path connects every trade chronologically</span>
           </p>
         </div>
-        <div className="text-gray-600 text-xs">{trades.length} total trades</div>
+        <div className="text-gray-600 text-xs text-right">
+          <div>{priceData.length.toLocaleString()} candles</div>
+          <div>{trades.length} trades</div>
+        </div>
       </div>
       <div ref={containerRef} />
-      {trades.length === 0 && (
-        <div className="h-[420px] flex items-center justify-center text-gray-600 text-sm">
-          No trade history yet
+      {priceData.length === 0 && (
+        <div className="h-[480px] flex items-center justify-center text-gray-600 text-sm">
+          No price data yet
         </div>
       )}
     </div>

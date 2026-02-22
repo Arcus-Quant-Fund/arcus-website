@@ -476,6 +476,7 @@ export default function DashboardClient({ session, botState, priceData, trades, 
         {tab === "trades" && (
           <>
             <TradeHistoryChart
+              priceData={priceData}
               trades={trades}
               symbol={botState?.symbol ?? "XRPUSDT"}
             />
