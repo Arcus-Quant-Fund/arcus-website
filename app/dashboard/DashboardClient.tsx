@@ -285,9 +285,9 @@ export default function DashboardClient({ session, botState, priceData, trades, 
               }`}
             >
               {tabLabel[t]}
-              {t === "trades" && closedTrades.length > 0 && (
+              {t === "trades" && trades.length > 0 && (
                 <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-gray-700 text-gray-400 text-xs">
-                  {closedTrades.length}
+                  {trades.length}
                 </span>
               )}
             </button>
@@ -485,13 +485,13 @@ export default function DashboardClient({ session, botState, priceData, trades, 
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-white font-bold">Trade History</h2>
               <div className="flex gap-4 text-sm">
-                <span className="text-gray-500">Total: <span className="text-white font-medium">{closedTrades.length}</span></span>
+                <span className="text-gray-500">Total: <span className="text-white font-medium">{trades.length}</span></span>
                 <span className="text-gray-500">Win Rate: <span className={winRate != null ? pnlClass(winRate - 50) : "text-gray-400"}>{winRate != null ? `${winRate.toFixed(1)}%` : "N/A"}</span></span>
                 <span className="text-gray-500">Total PnL: <span className={pnlClass(totalPnl)}>{fmt(totalPnl, 2, "$")}</span></span>
               </div>
             </div>
 
-            {closedTrades.length === 0 ? (
+            {trades.length === 0 ? (
               <div className="py-16 text-center text-gray-600">
                 <p className="text-lg mb-2">No trade history yet</p>
                 <p className="text-sm">Trades will appear here once the bot executes and closes positions.</p>
@@ -514,9 +514,9 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                     </tr>
                   </thead>
                   <tbody>
-                    {[...closedTrades].reverse().map((t, i) => (
+                    {[...trades].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((t, i) => (
                       <tr key={t.trade_id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                        <td className="py-3 pr-4 text-gray-600 text-xs">{closedTrades.length - i}</td>
+                        <td className="py-3 pr-4 text-gray-600 text-xs">{trades.length - i}</td>
                         <td className="py-3 pr-4 text-gray-400 text-xs whitespace-nowrap">
                           {new Date(t.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}{" "}
                           <span className="text-gray-600">{new Date(t.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
