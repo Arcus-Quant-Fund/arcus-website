@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import {
   ComposedChart, Line, Bar, XAxis, YAxis, Tooltip,
@@ -114,6 +114,29 @@ type Tab = typeof TABS[number];
 
 export default function DashboardClient({ session, botState, priceData, trades, balanceHistory }: Props) {
   const [tab, setTab] = useState<Tab>("dashboard");
+  const [now, setNow] = useState(() => Date.now());
+
+  // Tick every 30s so the live indicator stays accurate client-side
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Staleness: sync runs every 60s — >2 min = stale, >5 min = offline
+  const lastSync = botState?.updated_at ? new Date(botState.updated_at).getTime() : null;
+  const ageSeconds = lastSync ? (now - lastSync) / 1000 : null;
+  const liveStatus =
+    ageSeconds === null ? "unknown"
+    : ageSeconds < 120   ? "live"
+    : ageSeconds < 300   ? "delayed"
+    : "offline";
+
+  const liveConfig = {
+    live:    { dot: "bg-green-500",  ring: "border-green-500/30",  bg: "bg-green-500/10",  text: "text-green-400",  label: "LIVE" },
+    delayed: { dot: "bg-yellow-400", ring: "border-yellow-400/30", bg: "bg-yellow-400/10", text: "text-yellow-400", label: "DELAYED" },
+    offline: { dot: "bg-red-500",    ring: "border-red-500/30",    bg: "bg-red-500/10",    text: "text-red-400",    label: "OFFLINE" },
+    unknown: { dot: "bg-gray-500",   ring: "border-gray-500/30",   bg: "bg-gray-500/10",   text: "text-gray-400",   label: "NO DATA" },
+  }[liveStatus];
 
   const sortedPrice = [...priceData].sort((a, b) =>
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -198,12 +221,23 @@ export default function DashboardClient({ session, botState, priceData, trades, 
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {/* Live / Stale indicator */}
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium ${liveConfig.bg} ${liveConfig.ring} ${liveConfig.text}`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${liveConfig.dot} ${liveStatus === "live" ? "animate-pulse" : ""}`} />
+              {liveConfig.label}
+              {ageSeconds !== null && (
+                <span className="opacity-60 ml-0.5">
+                  · {ageSeconds < 60 ? `${Math.floor(ageSeconds)}s` : `${Math.floor(ageSeconds / 60)}m`} ago
+                </span>
+              )}
+            </div>
+
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium ${
               isUptrend
                 ? "bg-green-500/10 border-green-500/20 text-green-400"
                 : "bg-red-500/10 border-red-500/20 text-red-400"
             }`}>
-              <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isUptrend ? "bg-green-500" : "bg-red-500"}`} />
+              <div className={`w-1.5 h-1.5 rounded-full ${isUptrend ? "bg-green-500" : "bg-red-500"}`} />
               {isUptrend ? "UPTREND" : "DOWNTREND"}
             </div>
             <button
