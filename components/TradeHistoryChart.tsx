@@ -38,7 +38,7 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
   const [error, setError]     = useState("");
   const [candles, setCandles] = useState<PricePoint[]>([]);
 
-  // Fetch Binance historical 4h candles directly from browser (avoids server IP blocks)
+  // Fetch historical 4h candles via server-side API route (Kraken, no CORS issues)
   useEffect(() => {
     if (trades.length === 0) { setLoading(false); return; }
 
@@ -49,27 +49,10 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
     // Start 1 day before earliest trade so chart isn't cut off
     const startTime = new Date(earliest).getTime() - 86_400_000;
 
-    const url = new URL("https://api.binance.com/api/v3/klines");
-    url.searchParams.set("symbol", symbol);
-    url.searchParams.set("interval", "4h");
-    url.searchParams.set("limit", "1500");
-    url.searchParams.set("startTime", String(startTime));
-
-    fetch(url.toString())
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((raw: unknown[][]) => {
-        const data: PricePoint[] = raw.map((k) => ({
-          timestamp: new Date(k[0] as number).toISOString(),
-          open:  parseFloat(k[1] as string),
-          high:  parseFloat(k[2] as string),
-          low:   parseFloat(k[3] as string),
-          close: parseFloat(k[4] as string),
-          volume: parseFloat(k[5] as string),
-          vwap_ema: 0,
-        }));
+    fetch(`/api/price-history?startTime=${startTime}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
         setCandles(data);
       })
       .catch((e) => setError(String(e)))
