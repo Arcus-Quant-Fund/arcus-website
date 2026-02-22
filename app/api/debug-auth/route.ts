@@ -38,6 +38,8 @@ export async function GET() {
       ok: res.ok,
       url_prefix: supabaseUrl.slice(0, 35),
       key_prefix: anonKey.slice(0, 20),
+      key_length: anonKey.length,
+      key_full: anonKey,
       response: data,
     });
   } catch (e: unknown) {
