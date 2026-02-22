@@ -28,6 +28,24 @@ body {
   background-clip: text;
 }
 
+/* ── Login welcome animations ────────────────────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in  { animation: fade-in  0.35s ease forwards; }
+.animate-slide-up { animation: slide-up 0.5s ease 0.1s both; }
+.animate-scale-in { animation: scale-in 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.4s both; }
+
 .gradient-text-brand {
   background: linear-gradient(90deg, #f8ac07, #3469a6);
   -webkit-background-clip: text;
