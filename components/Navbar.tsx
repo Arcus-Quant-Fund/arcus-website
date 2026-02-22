@@ -28,7 +28,7 @@ export default function Navbar() {
             alt="Arcus Quant Fund"
             width={140}
             height={47}
-            className="rounded bg-white px-2 py-1"
+            className="object-contain"
             priority
           />
         </Link>
