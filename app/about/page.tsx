@@ -20,8 +20,8 @@ export default function AboutPage() {
         {/* Founder section */}
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mb-10">
           <div className="flex items-start gap-6">
-            <div className="flex-shrink-0 w-20 h-20 flex items-center justify-center">
-              <Image src="/logo.png" alt="Arcus Quant Fund" width={80} height={80} className="object-contain" />
+            <div className="flex-shrink-0 w-20 h-20 rounded-full overflow-hidden">
+              <Image src="/founder.jpg" alt="Shehzad Ahmed" width={80} height={80} className="w-full h-full object-cover" />
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white mb-1">Shehzad Ahmed</h2>
