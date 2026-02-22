@@ -191,10 +191,9 @@ export default function DashboardClient({ session, botState, priceData, trades, 
   const leverage = botState?.leverage ?? 3.5;
   const currentBalance = botState?.current_amount ?? null;
 
-  // ROI = totalPnl / sum(buy_amount / leverage)
-  // Each buy trade's real investment = amount / leverage (e.g. amount / 3.5)
-  const buyTrades = trades.filter(t => t.side?.toUpperCase() === "BUY" && (t.amount ?? 0) > 0);
-  const totalInvested = buyTrades.reduce((s, t) => s + (t.amount ?? 0) / leverage, 0);
+  // Exact ROI: each closed (SELL) trade carries its exact position amount.
+  // Investment per trade = amount / leverage  →  sum gives total real capital deployed.
+  const totalInvested = closedTrades.reduce((s, t) => s + (t.amount ?? 0) / leverage, 0);
   const roiPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : null;
 
   // Cumulative PnL chart (chronological)
