@@ -108,7 +108,7 @@ export default function DashboardClient({ session, summary, balanceHistory, posi
                   contentStyle={{ background: "#111827", border: "1px solid #1f2937", borderRadius: 8 }}
                   labelStyle={{ color: "#9ca3af" }}
                   itemStyle={{ color: "#f8ac07" }}
-                  formatter={(v: number) => [`$${v.toLocaleString()}`, "Balance"]}
+                  formatter={(v: number | undefined) => [`$${(v ?? 0).toLocaleString()}`, "Balance"]}
                 />
                 <Line type="monotone" dataKey="balance" stroke="#f8ac07" strokeWidth={2} dot={false} />
               </LineChart>
