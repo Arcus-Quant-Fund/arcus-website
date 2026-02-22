@@ -191,10 +191,23 @@ export default function DashboardClient({ session, botState, priceData, trades, 
   const leverage = botState?.leverage ?? 3.5;
   const currentBalance = botState?.current_amount ?? null;
 
-  // Investment = buy_amount / leverage (3.5×) for each trade
-  const buyTrades = trades.filter(t => t.side?.toUpperCase() === "BUY" && (t.amount ?? 0) > 0);
-  const totalInvested = buyTrades.reduce((s, t) => s + (t.amount ?? 0) / leverage, 0);
-  const roiPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : null;
+  // Per-trade ROI: pair BUY[i] with SELL[i] chronologically.
+  // roi_i = pnl_i / (buy_amount_i / leverage) × 100  →  total = Σ roi_i
+  const buysSorted = [...trades]
+    .filter(t => t.side?.toUpperCase() === "BUY" && (t.amount ?? 0) > 0)
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  const sellsSorted = [...closedTrades]
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  const pairCount = Math.min(buysSorted.length, sellsSorted.length);
+  let roiPct: number | null = pairCount > 0 ? 0 : null;
+  let totalInvested = 0;
+  for (let i = 0; i < pairCount; i++) {
+    const inv = (buysSorted[i].amount ?? 0) / leverage;
+    if (inv > 0) {
+      totalInvested += inv;
+      (roiPct as number) += ((sellsSorted[i].pnl ?? 0) / inv) * 100;
+    }
+  }
 
   // Cumulative PnL chart (chronological)
   let running = 0;
