@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   ComposedChart, Line, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Area, AreaChart, Cell,
@@ -115,12 +116,19 @@ type Tab = typeof TABS[number];
 export default function DashboardClient({ session, botState, priceData, trades, balanceHistory }: Props) {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [now, setNow] = useState(() => Date.now());
+  const router = useRouter();
 
   // Tick every 30s so the live indicator stays accurate client-side
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(id);
   }, []);
+
+  // Auto-refresh server data every 60s (matches sync script cadence)
+  useEffect(() => {
+    const id = setInterval(() => router.refresh(), 60_000);
+    return () => clearInterval(id);
+  }, [router]);
 
   // Staleness: sync runs every 60s — >5 min = delayed, >8 min = offline
   const lastSync = botState?.updated_at ? new Date(botState.updated_at).getTime() : null;
@@ -180,13 +188,12 @@ export default function DashboardClient({ session, botState, priceData, trades, 
   const bestTrade = closedTrades.reduce((best, t) => (t.pnl ?? -Infinity) > (best?.pnl ?? -Infinity) ? t : best, closedTrades[0]);
   const worstTrade = closedTrades.reduce((worst, t) => (t.pnl ?? Infinity) < (worst?.pnl ?? Infinity) ? t : worst, closedTrades[0]);
 
-  // ROI: investment = buy amount / leverage
-  // BUY trades never carry PnL so they're not in closedTrades — pull from all trades
   const leverage = botState?.leverage ?? 3.5;
-  const buyTrades = trades.filter(t => t.side?.toUpperCase() === "BUY" && (t.amount ?? 0) > 0);
-  const totalInvested = buyTrades.reduce((s, t) => s + (t.amount ?? 0) / leverage, 0);
-  const roiPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : null;
   const currentBalance = botState?.current_amount ?? null;
+
+  // ROI = total realised PnL as % of current account balance
+  // (summing all buy amounts would inflate the denominator since capital is reused each trade)
+  const roiPct = currentBalance && currentBalance > 0 ? (totalPnl / currentBalance) * 100 : null;
 
   // Cumulative PnL chart (chronological)
   let running = 0;
@@ -523,7 +530,7 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                   {roiPct != null ? `${roiPct >= 0 ? "+" : ""}${roiPct.toFixed(2)}%` : "N/A"}
                 </div>
                 <div className="text-white text-sm font-medium">ROI</div>
-                <div className="text-gray-500 text-xs mt-0.5">On {fmt(totalInvested, 2, "$")} invested</div>
+                <div className="text-gray-500 text-xs mt-0.5">vs. {fmt(currentBalance, 2, "$")} balance</div>
               </div>
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
                 <div className={`text-3xl font-bold mb-1 ${totalPnl >= 0 ? "text-green-400" : "text-red-400"}`}>

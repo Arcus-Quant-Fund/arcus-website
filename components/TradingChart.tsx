@@ -26,10 +26,16 @@ type Trade = {
   reason: string | null;
 };
 
+// Bot DC strategy constants (same for all bots)
+const BUY_THRESHOLD = 0.043;   // 4.3% above extreme → buy trigger
+const SELL_THRESHOLD = 0.0109; // 1.09% below extreme → sell trigger
+
 type BotState = {
   extreme_price: number | null;
   is_uptrend: boolean;
   last_dc_price: number | null;
+  entry_price?: number | null;
+  position?: string | null;
   leverage?: number;
 } | null;
 
@@ -151,44 +157,42 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
       }))
     );
 
-    // ── Extreme price line (purple dotted) ────────────────────────────────────
-    if (botState?.extreme_price) {
-      const extremeSeries = chart.addLineSeries({
-        color: "#a855f7",
-        lineWidth: 1,
-        lineStyle: 1,
-        title: "Extreme",
-        priceScaleId: "right",
-        lastValueVisible: true,
-        priceLineVisible: false,
-        crosshairMarkerVisible: false,
+    const firstTime = (new Date(sorted[0].timestamp).getTime() / 1000) as Time;
+    const lastTime = (new Date(sorted[sorted.length - 1].timestamp).getTime() / 1000) as Time;
+
+    function hline(color: string, title: string, price: number, dash: number) {
+      const s = chart.addLineSeries({
+        color, lineWidth: 1, lineStyle: dash,
+        title, priceScaleId: "right",
+        lastValueVisible: true, priceLineVisible: false, crosshairMarkerVisible: false,
       });
-      const firstTime = (new Date(sorted[0].timestamp).getTime() / 1000) as Time;
-      const lastTime = (new Date(sorted[sorted.length - 1].timestamp).getTime() / 1000) as Time;
-      extremeSeries.setData([
-        { time: firstTime, value: botState.extreme_price },
-        { time: lastTime, value: botState.extreme_price },
-      ]);
+      s.setData([{ time: firstTime, value: price }, { time: lastTime, value: price }]);
     }
 
-    // ── Last DC price line (cyan dotted) ──────────────────────────────────────
+    if (botState?.extreme_price) {
+      const ep = botState.extreme_price;
+
+      // Extreme price (purple dotted) — the current DC reference level
+      hline("#a855f7", "Extreme", ep, 1);
+
+      // Trigger line: depends on trend direction
+      if (botState.is_uptrend) {
+        // Uptrend → bot will SELL if price falls below extreme by sell_threshold
+        hline("#ef4444", `Sell Trigger −${(SELL_THRESHOLD * 100).toFixed(2)}%`, ep * (1 - SELL_THRESHOLD), 2);
+      } else {
+        // Downtrend → bot will BUY if price rises above extreme by buy_threshold
+        hline("#22c55e", `Buy Trigger +${(BUY_THRESHOLD * 100).toFixed(1)}%`, ep * (1 + BUY_THRESHOLD), 2);
+      }
+    }
+
+    // Entry price (blue) — shown when bot holds a long position
+    if (botState?.position === "long" && botState.entry_price) {
+      hline("#3b82f6", "Entry Price", botState.entry_price, 2);
+    }
+
+    // Last DC price (cyan dotted) — price at which last directional change occurred
     if (botState?.last_dc_price) {
-      const dcSeries = chart.addLineSeries({
-        color: "#06b6d4",
-        lineWidth: 1,
-        lineStyle: 1,
-        title: "DC Price",
-        priceScaleId: "right",
-        lastValueVisible: true,
-        priceLineVisible: false,
-        crosshairMarkerVisible: false,
-      });
-      const firstTime = (new Date(sorted[0].timestamp).getTime() / 1000) as Time;
-      const lastTime = (new Date(sorted[sorted.length - 1].timestamp).getTime() / 1000) as Time;
-      dcSeries.setData([
-        { time: firstTime, value: botState.last_dc_price },
-        { time: lastTime, value: botState.last_dc_price },
-      ]);
+      hline("#06b6d4", "DC Price", botState.last_dc_price, 1);
     }
 
     // ── Buy / Sell trade markers ──────────────────────────────────────────────
@@ -251,15 +255,16 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
         <div>
           <h3 className="text-white font-semibold">{symbol} — Candlestick & VWAP EMA</h3>
           <p className="text-gray-500 text-xs mt-1 flex items-center gap-4 flex-wrap">
-            <span><span className="text-green-400 font-bold">▲</span> Buy entry</span>
-            <span><span className="text-red-400 font-bold">▼</span> Sell + PnL</span>
-            <span className="text-orange-400">━━ VWAP EMA</span>
-            {botState?.extreme_price && (
-              <span className="text-purple-400">┄ Extreme</span>
-            )}
-            {botState?.last_dc_price && (
-              <span className="text-cyan-400">┄ DC Price</span>
-            )}
+            <span><span className="text-green-400 font-bold">▲</span> Buy</span>
+            <span><span className="text-red-400 font-bold">▼</span> Sell+PnL</span>
+            <span className="text-orange-400">━ VWAP EMA</span>
+            {botState?.extreme_price && <span className="text-purple-400">┄ Extreme</span>}
+            {botState?.is_uptrend
+              ? <span className="text-red-400">┄ Sell Trigger −{(SELL_THRESHOLD * 100).toFixed(2)}%</span>
+              : <span className="text-green-400">┄ Buy Trigger +{(BUY_THRESHOLD * 100).toFixed(1)}%</span>
+            }
+            {botState?.position === "long" && <span className="text-blue-400">━ Entry Price</span>}
+            {botState?.last_dc_price && <span className="text-cyan-400">┄ DC Price</span>}
           </p>
         </div>
         <div className="text-gray-600 text-xs text-right">
