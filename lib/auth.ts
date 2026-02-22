@@ -11,16 +11,28 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.password) {
+          console.error("[auth] missing credentials");
+          return null;
+        }
 
-        // Authenticate against Supabase
+        console.log("[auth] attempting sign-in for:", credentials.email);
+
         const { data, error } = await supabase.auth.signInWithPassword({
           email: credentials.email,
           password: credentials.password,
         });
 
-        if (error || !data.user) return null;
+        if (error) {
+          console.error("[auth] supabase error:", error.message, error.status);
+          return null;
+        }
+        if (!data.user) {
+          console.error("[auth] no user returned");
+          return null;
+        }
 
+        console.log("[auth] sign-in OK:", data.user.email);
         return {
           id: data.user.id,
           email: data.user.email!,
