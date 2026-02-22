@@ -508,7 +508,8 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                       <th className="pb-3 pr-4">Qty</th>
                       <th className="pb-3 pr-4">Amount</th>
                       <th className="pb-3 pr-4">PnL</th>
-                      <th className="pb-3 pr-4">PnL %</th>
+                      <th className="pb-3 pr-4 text-gray-400">PnL % <span className="text-gray-600 font-normal">(position)</span></th>
+                      <th className="pb-3 pr-4 text-white">PnL % <span className="text-gray-400 font-normal">({leverage}× margin)</span></th>
                       <th className="pb-3">Reason</th>
                     </tr>
                   </thead>
@@ -531,6 +532,11 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                         </td>
                         <td className={`py-3 pr-4 text-xs ${pnlClass(t.pnl_percent)}`}>
                           {t.pnl_percent != null ? `${fmt(t.pnl_percent, 2)}%` : "—"}
+                        </td>
+                        <td className={`py-3 pr-4 text-xs font-semibold ${pnlClass(t.pnl)}`}>
+                          {t.pnl != null && t.amount
+                            ? `${((t.pnl / (t.amount / leverage)) * 100) >= 0 ? "+" : ""}${((t.pnl / (t.amount / leverage)) * 100).toFixed(2)}%`
+                            : "—"}
                         </td>
                         <td className="py-3 text-gray-500 text-xs">{t.reason ?? "—"}</td>
                       </tr>
