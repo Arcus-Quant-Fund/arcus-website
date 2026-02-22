@@ -539,12 +539,33 @@ export default function DashboardClient({ session, botState, priceData, trades, 
           <>
             {/* ROI & Key Metrics */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
+              <div className="relative group bg-gray-900 border border-gray-800 rounded-xl p-5 text-center cursor-help">
                 <div className={`text-3xl font-bold mb-1 ${roiPct != null ? (roiPct >= 0 ? "text-green-400" : "text-red-400") : "text-gray-400"}`}>
                   {roiPct != null ? `${roiPct >= 0 ? "+" : ""}${roiPct.toFixed(2)}%` : "N/A"}
                 </div>
                 <div className="text-white text-sm font-medium">ROI</div>
                 <div className="text-gray-500 text-xs mt-0.5">Across {pairCount} completed trades</div>
+                {/* Hover tooltip */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-gray-800 border border-gray-700 rounded-xl p-4 text-left text-xs text-gray-300 shadow-xl z-50 hidden group-hover:block pointer-events-none">
+                  <div className="font-semibold text-white mb-2">How ROI is calculated</div>
+                  <div className="space-y-1.5 text-gray-400">
+                    <div>For each completed trade pair (BUY → SELL):</div>
+                    <div className="bg-gray-900 rounded-lg px-3 py-2 font-mono text-gray-200">
+                      investment = buy_amount ÷ {leverage}
+                    </div>
+                    <div className="bg-gray-900 rounded-lg px-3 py-2 font-mono text-gray-200">
+                      trade_roi = (pnl ÷ investment) × 100
+                    </div>
+                    <div className="border-t border-gray-700 pt-1.5">
+                      <span className="text-white">Total ROI</span> = sum of all trade_roi values
+                    </div>
+                    <div className="text-gray-500 pt-0.5">
+                      Dividing by {leverage}× reflects the actual margin deployed per trade, not the leveraged position size.
+                    </div>
+                  </div>
+                  {/* Arrow */}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-700" />
+                </div>
               </div>
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
                 <div className={`text-3xl font-bold mb-1 ${totalPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
