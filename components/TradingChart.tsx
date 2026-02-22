@@ -59,21 +59,24 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    // Build candle times array (seconds) for snapping trade markers
-    // lightweight-charts requires marker.time to match an actual data point time
+    // Integer seconds — Math.floor prevents float precision mismatches that
+    // cause lightweight-charts to silently drop markers
     const candleTimes: number[] = sorted.map(
-      (p) => new Date(p.timestamp).getTime() / 1000
+      (p) => Math.floor(new Date(p.timestamp).getTime() / 1000)
     );
 
     function snapToCandle(tradeSec: number): Time | null {
-      let closest = -1;
+      const sec = Math.floor(tradeSec);
+      const first = candleTimes[0];
+      const last  = candleTimes[candleTimes.length - 1];
+      if (sec < first || sec > last) return null; // outside chart range
+      let closest = candleTimes[0];
       let minDiff = Infinity;
       for (const ct of candleTimes) {
-        const d = Math.abs(ct - tradeSec);
+        const d = Math.abs(ct - sec);
         if (d < minDiff) { minDiff = d; closest = ct; }
       }
-      // Only place marker if within 10 minutes of a candle
-      return minDiff <= 600 ? (closest as Time) : null;
+      return closest as Time;
     }
 
     // ── Create chart ──────────────────────────────────────────────────────────
@@ -114,12 +117,9 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
     candleRef.current = candleSeries;
 
     candleSeries.setData(
-      sorted.map((p) => ({
-        time: (new Date(p.timestamp).getTime() / 1000) as Time,
-        open: p.open,
-        high: p.high,
-        low: p.low,
-        close: p.close,
+      sorted.map((p, i) => ({
+        time: candleTimes[i] as Time,
+        open: p.open, high: p.high, low: p.low, close: p.close,
       }))
     );
 
@@ -127,7 +127,7 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
     const vwapSeries = chart.addLineSeries({
       color: "#f97316",
       lineWidth: 2,
-      lineStyle: 2, // dashed
+      lineStyle: 2,
       title: "VWAP EMA",
       priceScaleId: "right",
       crosshairMarkerVisible: false,
@@ -136,7 +136,7 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
       sorted
         .filter((p) => p.vwap_ema != null)
         .map((p) => ({
-          time: (new Date(p.timestamp).getTime() / 1000) as Time,
+          time: Math.floor(new Date(p.timestamp).getTime() / 1000) as Time,
           value: p.vwap_ema,
         }))
     );
@@ -150,15 +150,15 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
       scaleMargins: { top: 0.78, bottom: 0 },
     });
     volumeSeries.setData(
-      sorted.map((p) => ({
-        time: (new Date(p.timestamp).getTime() / 1000) as Time,
+      sorted.map((p, i) => ({
+        time: candleTimes[i] as Time,
         value: p.volume,
         color: p.close >= p.open ? "rgba(34,197,94,0.45)" : "rgba(239,68,68,0.45)",
       }))
     );
 
-    const firstTime = (new Date(sorted[0].timestamp).getTime() / 1000) as Time;
-    const lastTime = (new Date(sorted[sorted.length - 1].timestamp).getTime() / 1000) as Time;
+    const firstTime = candleTimes[0] as Time;
+    const lastTime  = candleTimes[candleTimes.length - 1] as Time;
 
     function hline(color: string, title: string, price: number, dash: number) {
       const s = chart.addLineSeries({
@@ -202,7 +202,7 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
       const markerMap = new Map<number, SeriesMarker<Time>>();
 
       for (const t of sortedTrades) {
-        const tradeSec = new Date(t.timestamp).getTime() / 1000;
+        const tradeSec = Math.floor(new Date(t.timestamp).getTime() / 1000);
         const snapped = snapToCandle(tradeSec);
         if (snapped === null) continue;
 

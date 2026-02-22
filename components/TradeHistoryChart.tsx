@@ -42,17 +42,22 @@ export default function TradeHistoryChart({ priceData, trades, symbol = "XRPUSDT
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    // Candle times in seconds for snapping trade markers
-    const candleTimes = sorted.map((p) => new Date(p.timestamp).getTime() / 1000);
+    // Candle times as integer seconds (Math.floor avoids float precision issues
+    // that cause lightweight-charts to silently drop markers)
+    const candleTimes = sorted.map((p) => Math.floor(new Date(p.timestamp).getTime() / 1000));
 
     function snapToCandle(tradeSec: number): Time | null {
-      let closest = -1;
+      const sec = Math.floor(tradeSec);
+      const first = candleTimes[0];
+      const last  = candleTimes[candleTimes.length - 1];
+      if (sec < first || sec > last) return null; // outside chart range
+      let closest = candleTimes[0];
       let minDiff = Infinity;
       for (const ct of candleTimes) {
-        const d = Math.abs(ct - tradeSec);
+        const d = Math.abs(ct - sec);
         if (d < minDiff) { minDiff = d; closest = ct; }
       }
-      return minDiff <= 600 ? (closest as Time) : null;
+      return closest as Time;
     }
 
     const chart = createChart(containerRef.current, {
@@ -86,8 +91,8 @@ export default function TradeHistoryChart({ priceData, trades, symbol = "XRPUSDT
     });
 
     candleSeries.setData(
-      sorted.map((p) => ({
-        time: (new Date(p.timestamp).getTime() / 1000) as Time,
+      sorted.map((p, i) => ({
+        time: candleTimes[i] as Time,
         open: p.open, high: p.high, low: p.low, close: p.close,
       }))
     );
@@ -101,8 +106,8 @@ export default function TradeHistoryChart({ priceData, trades, symbol = "XRPUSDT
       scaleMargins: { top: 0.78, bottom: 0 },
     });
     volumeSeries.setData(
-      sorted.map((p) => ({
-        time: (new Date(p.timestamp).getTime() / 1000) as Time,
+      sorted.map((p, i) => ({
+        time: candleTimes[i] as Time,
         value: p.volume,
         color: p.close >= p.open ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)",
       }))
@@ -117,7 +122,7 @@ export default function TradeHistoryChart({ priceData, trades, symbol = "XRPUSDT
       const markerMap = new Map<number, SeriesMarker<Time>>();
 
       for (const t of sortedTrades) {
-        const tradeSec = new Date(t.timestamp).getTime() / 1000;
+        const tradeSec = new Date(t.timestamp).getTime() / 1000; // snapToCandle floors it
         const snapped = snapToCandle(tradeSec);
         if (snapped === null) continue;
 
