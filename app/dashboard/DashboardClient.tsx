@@ -191,9 +191,11 @@ export default function DashboardClient({ session, botState, priceData, trades, 
   const leverage = botState?.leverage ?? 3.5;
   const currentBalance = botState?.current_amount ?? null;
 
-  // ROI = total realised PnL as % of current account balance
-  // (summing all buy amounts would inflate the denominator since capital is reused each trade)
-  const roiPct = currentBalance && currentBalance > 0 ? (totalPnl / currentBalance) * 100 : null;
+  // ROI = totalPnl / sum(buy_amount / leverage)
+  // Each buy trade's real investment = amount / leverage (e.g. amount / 3.5)
+  const buyTrades = trades.filter(t => t.side?.toUpperCase() === "BUY" && (t.amount ?? 0) > 0);
+  const totalInvested = buyTrades.reduce((s, t) => s + (t.amount ?? 0) / leverage, 0);
+  const roiPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : null;
 
   // Cumulative PnL chart (chronological)
   let running = 0;
@@ -530,7 +532,7 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                   {roiPct != null ? `${roiPct >= 0 ? "+" : ""}${roiPct.toFixed(2)}%` : "N/A"}
                 </div>
                 <div className="text-white text-sm font-medium">ROI</div>
-                <div className="text-gray-500 text-xs mt-0.5">vs. {fmt(currentBalance, 2, "$")} balance</div>
+                <div className="text-gray-500 text-xs mt-0.5">On {fmt(totalInvested, 2, "$")} deployed ({leverage}×)</div>
               </div>
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
                 <div className={`text-3xl font-bold mb-1 ${totalPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
