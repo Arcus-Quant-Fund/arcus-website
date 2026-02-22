@@ -3,7 +3,7 @@ import { useState } from "react";
 import { signOut } from "next-auth/react";
 import {
   ComposedChart, Line, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid, Legend,
+  ResponsiveContainer, CartesianGrid, Legend, Area, AreaChart, Cell,
 } from "recharts";
 import { LogOut } from "lucide-react";
 
@@ -104,10 +104,13 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="text-white font-semibold text-sm mb-3 mt-5 first:mt-0">{children}</h3>;
 }
 
+const TABS = ["dashboard", "trades", "performance"] as const;
+type Tab = typeof TABS[number];
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function DashboardClient({ session, botState, priceData, trades, balanceHistory }: Props) {
-  const [tab, setTab] = useState<"dashboard" | "trades">("dashboard");
+  const [tab, setTab] = useState<Tab>("dashboard");
 
   const sortedPrice = [...priceData].sort((a, b) =>
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -133,11 +136,51 @@ export default function DashboardClient({ session, botState, priceData, trades, 
   const isUptrend = botState?.is_uptrend ?? false;
   const inPosition = botState?.position === "long";
 
-  // Win rate calc
-  const closedTrades = trades.filter(t => t.pnl != null);
-  const wins = closedTrades.filter(t => (t.pnl ?? 0) > 0).length;
-  const winRate = closedTrades.length > 0 ? ((wins / closedTrades.length) * 100).toFixed(1) : null;
+  // ── Performance stats ──
+  const closedTrades = [...trades]
+    .filter(t => t.pnl != null)
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+  const wins = closedTrades.filter(t => (t.pnl ?? 0) > 0);
+  const losses = closedTrades.filter(t => (t.pnl ?? 0) < 0);
+  const winRate = closedTrades.length > 0 ? (wins.length / closedTrades.length) * 100 : null;
   const totalPnl = closedTrades.reduce((sum, t) => sum + (t.pnl ?? 0), 0);
+
+  const grossWin = wins.reduce((s, t) => s + (t.pnl ?? 0), 0);
+  const grossLoss = Math.abs(losses.reduce((s, t) => s + (t.pnl ?? 0), 0));
+  const profitFactor = grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? Infinity : 0;
+  const avgWin = wins.length > 0 ? grossWin / wins.length : null;
+  const avgLoss = losses.length > 0 ? grossLoss / losses.length : null;
+  const bestTrade = closedTrades.reduce((best, t) => (t.pnl ?? -Infinity) > (best?.pnl ?? -Infinity) ? t : best, closedTrades[0]);
+  const worstTrade = closedTrades.reduce((worst, t) => (t.pnl ?? Infinity) < (worst?.pnl ?? Infinity) ? t : worst, closedTrades[0]);
+
+  // ROI: investment = buy amount / leverage (3.5x isolated margin)
+  const leverage = botState?.leverage ?? 3.5;
+  const buyTrades = closedTrades.filter(t => t.side?.toUpperCase() === "BUY");
+  const totalInvested = buyTrades.reduce((s, t) => s + (t.amount ?? 0) / leverage, 0);
+  const roiPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : null;
+  const currentBalance = botState?.current_amount ?? null;
+
+  // Cumulative PnL chart (chronological)
+  let running = 0;
+  const cumulativePnlData = closedTrades.map((t, i) => {
+    running += t.pnl ?? 0;
+    return {
+      n: i + 1,
+      label: new Date(t.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      cumPnl: +running.toFixed(2),
+      pnl: +(t.pnl ?? 0).toFixed(2),
+    };
+  });
+
+  // Per-trade PnL bars (last 50 for readability)
+  const tradeBars = cumulativePnlData.slice(-50);
+
+  const tabLabel: Record<Tab, string> = {
+    dashboard: "Trading Dashboard",
+    trades: "Trade History",
+    performance: "Performance & ROI",
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] pt-24 px-4 pb-16">
@@ -147,7 +190,9 @@ export default function DashboardClient({ session, botState, priceData, trades, 
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white">Trading Dashboard</h1>
-            <p className="text-gray-500 text-sm mt-0.5">{session.user.name} · {botState?.symbol ?? "XRPUSDT"} · Isolated Margin · {botState?.leverage ?? 3.5}x</p>
+            <p className="text-gray-500 text-sm mt-0.5">
+              {session.user.name} · {botState?.symbol ?? "XRPUSDT"} · Isolated Margin · {botState?.leverage ?? 3.5}x
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium ${
@@ -169,7 +214,7 @@ export default function DashboardClient({ session, botState, priceData, trades, 
 
         {/* ── Tabs ── */}
         <div className="flex gap-1 mb-6 border-b border-gray-800">
-          {(["dashboard", "trades"] as const).map((t) => (
+          {TABS.map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -179,7 +224,12 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                   : "border-transparent text-gray-400 hover:text-white"
               }`}
             >
-              {t === "dashboard" ? "Trading Dashboard" : "Trade History"}
+              {tabLabel[t]}
+              {t === "trades" && closedTrades.length > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-gray-700 text-gray-400 text-xs">
+                  {closedTrades.length}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -187,7 +237,6 @@ export default function DashboardClient({ session, botState, priceData, trades, 
         {/* ══ DASHBOARD TAB ══ */}
         {tab === "dashboard" && (
           <>
-            {/* ── Two-column layout ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
               {/* LEFT — Bot State */}
@@ -213,7 +262,6 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                   />
                 </div>
 
-                {/* Margin Position — only when in trade */}
                 {inPosition && margin && (
                   <>
                     <SectionTitle>Margin Position</SectionTitle>
@@ -291,29 +339,17 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                     <SectionTitle>24h Stats</SectionTitle>
                     <div className="grid grid-cols-3 gap-3">
                       <MetricCard label="Volume" value={latest.volume ? fmt(latest.volume, 0) : "N/A"} />
-                      <MetricCard
-                        label="Range"
-                        value={`$${fmt(latest.low, 4)} – $${fmt(latest.high, 4)}`}
-                        deltaColor="neutral"
-                      />
-                      <MetricCard
-                        label="Range %"
-                        value={`${fmt(((latest.high - latest.low) / latest.low) * 100, 2)}%`}
-                      />
+                      <MetricCard label="Range" value={`$${fmt(latest.low, 4)} – $${fmt(latest.high, 4)}`} />
+                      <MetricCard label="Range %" value={`${fmt(((latest.high - latest.low) / latest.low) * 100, 2)}%`} />
                     </div>
                   </>
                 )}
 
-                {/* Risk metrics — only when in trade */}
                 {inPosition && margin && (
                   <>
                     <SectionTitle>Risk Metrics</SectionTitle>
                     <div className="grid grid-cols-2 gap-3">
-                      <MetricCard
-                        label="Liquidation Price"
-                        value={fmt(margin.liqPrice, 4, "$")}
-                        deltaColor="negative"
-                      />
+                      <MetricCard label="Liquidation Price" value={fmt(margin.liqPrice, 4, "$")} deltaColor="negative" />
                       <MetricCard
                         label="Distance to Liq."
                         value={`${fmt(margin.distToLiq, 2)}%`}
@@ -324,24 +360,20 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                         value={`${fmt(margin.marginRatio, 2)}%`}
                         deltaColor={margin.marginRatio > 50 ? "positive" : "negative"}
                       />
-                      <MetricCard
-                        label="Collateral"
-                        value={fmt(margin.requiredMargin, 2, "$")}
-                      />
+                      <MetricCard label="Collateral" value={fmt(margin.requiredMargin, 2, "$")} />
                     </div>
                   </>
                 )}
 
-                {/* Stats when no position */}
                 {!inPosition && (
                   <>
-                    <SectionTitle>Performance</SectionTitle>
+                    <SectionTitle>Performance Snapshot</SectionTitle>
                     <div className="grid grid-cols-3 gap-3">
                       <MetricCard label="Total Trades" value={String(closedTrades.length)} />
                       <MetricCard
                         label="Win Rate"
-                        value={winRate ? `${winRate}%` : "N/A"}
-                        deltaColor={parseFloat(winRate ?? "0") >= 50 ? "positive" : "negative"}
+                        value={winRate != null ? `${winRate.toFixed(1)}%` : "N/A"}
+                        deltaColor={winRate != null && winRate >= 50 ? "positive" : "negative"}
                       />
                       <MetricCard
                         label="Total PnL"
@@ -354,7 +386,7 @@ export default function DashboardClient({ session, botState, priceData, trades, 
               </div>
             </div>
 
-            {/* ── Price Chart ── */}
+            {/* Price Chart */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
               <h3 className="text-white font-semibold mb-5">
                 {botState?.symbol ?? "XRPUSDT"} — Price & VWAP EMA
@@ -364,15 +396,9 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                   <ComposedChart data={chartData} margin={{ left: 10, right: 10 }}>
                     <CartesianGrid stroke="#1f2937" strokeDasharray="3 3" />
                     <XAxis dataKey="time" tick={{ fill: "#6b7280", fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                    <YAxis yAxisId="price" tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} width={65}
-                      tickFormatter={(v) => `$${v}`} domain={["auto", "auto"]} />
-                    <YAxis yAxisId="vol" orientation="right" tick={{ fill: "#6b7280", fontSize: 10 }} axisLine={false} tickLine={false} width={50}
-                      tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip
-                      contentStyle={{ background: "#111827", border: "1px solid #1f2937", borderRadius: 8 }}
-                      labelStyle={{ color: "#9ca3af", fontSize: 11 }}
-                      itemStyle={{ fontSize: 12 }}
-                    />
+                    <YAxis yAxisId="price" tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} width={65} tickFormatter={(v) => `$${v}`} domain={["auto", "auto"]} />
+                    <YAxis yAxisId="vol" orientation="right" tick={{ fill: "#6b7280", fontSize: 10 }} axisLine={false} tickLine={false} width={50} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                    <Tooltip contentStyle={{ background: "#111827", border: "1px solid #1f2937", borderRadius: 8 }} labelStyle={{ color: "#9ca3af", fontSize: 11 }} itemStyle={{ fontSize: 12 }} />
                     <Legend wrapperStyle={{ fontSize: 12, color: "#9ca3af" }} />
                     <Bar yAxisId="vol" dataKey="volume" fill="#374151" opacity={0.4} name="Volume" />
                     <Line yAxisId="price" type="monotone" dataKey="close" stroke="#f8ac07" strokeWidth={1.5} dot={false} name="Price" />
@@ -384,21 +410,16 @@ export default function DashboardClient({ session, botState, priceData, trades, 
               )}
             </div>
 
-            {/* ── Balance Chart ── */}
+            {/* Balance Chart */}
             {balanceChartData.length > 1 && (
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
                 <h3 className="text-white font-semibold mb-5">Balance Over Time</h3>
                 <ResponsiveContainer width="100%" height={180}>
                   <ComposedChart data={balanceChartData}>
                     <CartesianGrid stroke="#1f2937" strokeDasharray="3 3" />
                     <XAxis dataKey="date" tick={{ fill: "#6b7280", fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} width={65}
-                      tickFormatter={(v) => `$${v.toLocaleString()}`} domain={["auto", "auto"]} />
-                    <Tooltip
-                      contentStyle={{ background: "#111827", border: "1px solid #1f2937", borderRadius: 8 }}
-                      itemStyle={{ color: "#f8ac07" }}
-                      formatter={(v: number | undefined) => [`$${(v ?? 0).toLocaleString()}`, "Balance"]}
-                    />
+                    <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} width={65} tickFormatter={(v) => `$${v.toLocaleString()}`} domain={["auto", "auto"]} />
+                    <Tooltip contentStyle={{ background: "#111827", border: "1px solid #1f2937", borderRadius: 8 }} itemStyle={{ color: "#f8ac07" }} formatter={(v: number | undefined) => [`$${(v ?? 0).toLocaleString()}`, "Balance"]} />
                     <Line type="monotone" dataKey="balance" stroke="#f8ac07" strokeWidth={2} dot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -413,47 +434,207 @@ export default function DashboardClient({ session, botState, priceData, trades, 
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-white font-bold">Trade History</h2>
               <div className="flex gap-4 text-sm">
-                <span className="text-gray-500">Total: <span className="text-white">{closedTrades.length}</span></span>
-                <span className="text-gray-500">Win Rate: <span className={winRate ? pnlClass(parseFloat(winRate) - 50) : "text-gray-400"}>{winRate ? `${winRate}%` : "N/A"}</span></span>
+                <span className="text-gray-500">Total: <span className="text-white font-medium">{closedTrades.length}</span></span>
+                <span className="text-gray-500">Win Rate: <span className={winRate != null ? pnlClass(winRate - 50) : "text-gray-400"}>{winRate != null ? `${winRate.toFixed(1)}%` : "N/A"}</span></span>
                 <span className="text-gray-500">Total PnL: <span className={pnlClass(totalPnl)}>{fmt(totalPnl, 2, "$")}</span></span>
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-800 text-gray-500 text-left text-xs">
-                    <th className="pb-3 pr-4">Date</th>
-                    <th className="pb-3 pr-4">Side</th>
-                    <th className="pb-3 pr-4">Price</th>
-                    <th className="pb-3 pr-4">Quantity</th>
-                    <th className="pb-3 pr-4">Amount</th>
-                    <th className="pb-3 pr-4">PnL</th>
-                    <th className="pb-3 pr-4">PnL %</th>
-                    <th className="pb-3">Reason</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {trades.length === 0 ? (
-                    <tr><td colSpan={8} className="py-10 text-center text-gray-600">No trades yet</td></tr>
-                  ) : trades.map((t) => (
-                    <tr key={t.trade_id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                      <td className="py-3 pr-4 text-gray-400 text-xs">{new Date(t.timestamp).toLocaleDateString()}</td>
-                      <td className={`py-3 pr-4 font-medium text-xs ${t.side === "BUY" ? "text-green-400" : "text-red-400"}`}>{t.side}</td>
-                      <td className="py-3 pr-4 text-gray-300">{fmt(t.price, 4, "$")}</td>
-                      <td className="py-3 pr-4 text-gray-300">{fmt(t.quantity, 4)}</td>
-                      <td className="py-3 pr-4 text-gray-300">{fmt(t.amount, 2, "$")}</td>
-                      <td className={`py-3 pr-4 font-medium ${pnlClass(t.pnl)}`}>{t.pnl != null ? fmt(t.pnl, 2, "$") : "—"}</td>
-                      <td className={`py-3 pr-4 ${pnlClass(t.pnl_percent)}`}>{t.pnl_percent != null ? `${fmt(t.pnl_percent, 2)}%` : "—"}</td>
-                      <td className="py-3 text-gray-500 text-xs">{t.reason ?? "—"}</td>
+
+            {closedTrades.length === 0 ? (
+              <div className="py-16 text-center text-gray-600">
+                <p className="text-lg mb-2">No trade history yet</p>
+                <p className="text-sm">Trades will appear here once the bot executes and closes positions.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-800 text-gray-500 text-left text-xs uppercase tracking-wide">
+                      <th className="pb-3 pr-4">#</th>
+                      <th className="pb-3 pr-4">Date</th>
+                      <th className="pb-3 pr-4">Side</th>
+                      <th className="pb-3 pr-4">Price</th>
+                      <th className="pb-3 pr-4">Qty</th>
+                      <th className="pb-3 pr-4">Amount</th>
+                      <th className="pb-3 pr-4">PnL</th>
+                      <th className="pb-3 pr-4">PnL %</th>
+                      <th className="pb-3">Reason</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {[...closedTrades].reverse().map((t, i) => (
+                      <tr key={t.trade_id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                        <td className="py-3 pr-4 text-gray-600 text-xs">{closedTrades.length - i}</td>
+                        <td className="py-3 pr-4 text-gray-400 text-xs whitespace-nowrap">
+                          {new Date(t.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}{" "}
+                          <span className="text-gray-600">{new Date(t.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
+                        </td>
+                        <td className={`py-3 pr-4 font-semibold text-xs ${t.side === "BUY" || t.side === "buy" ? "text-green-400" : "text-red-400"}`}>
+                          {t.side?.toUpperCase()}
+                        </td>
+                        <td className="py-3 pr-4 text-gray-300 font-mono text-xs">{fmt(t.price, 4, "$")}</td>
+                        <td className="py-3 pr-4 text-gray-400 text-xs">{fmt(t.quantity, 4)}</td>
+                        <td className="py-3 pr-4 text-gray-300 text-xs">{fmt(t.amount, 2, "$")}</td>
+                        <td className={`py-3 pr-4 font-semibold text-sm ${pnlClass(t.pnl)}`}>
+                          {t.pnl != null ? fmt(t.pnl, 2, "$") : "—"}
+                        </td>
+                        <td className={`py-3 pr-4 text-xs ${pnlClass(t.pnl_percent)}`}>
+                          {t.pnl_percent != null ? `${fmt(t.pnl_percent, 2)}%` : "—"}
+                        </td>
+                        <td className="py-3 text-gray-500 text-xs">{t.reason ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
-        {/* ── Last update ── */}
+        {/* ══ PERFORMANCE TAB ══ */}
+        {tab === "performance" && (
+          <>
+            {/* ROI & Key Metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
+                <div className={`text-3xl font-bold mb-1 ${roiPct != null ? (roiPct >= 0 ? "text-green-400" : "text-red-400") : "text-gray-400"}`}>
+                  {roiPct != null ? `${roiPct >= 0 ? "+" : ""}${roiPct.toFixed(2)}%` : "N/A"}
+                </div>
+                <div className="text-white text-sm font-medium">ROI</div>
+                <div className="text-gray-500 text-xs mt-0.5">On {fmt(totalInvested, 2, "$")} invested</div>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
+                <div className={`text-3xl font-bold mb-1 ${totalPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                  {fmt(totalPnl, 2, "$")}
+                </div>
+                <div className="text-white text-sm font-medium">Total PnL</div>
+                <div className="text-gray-500 text-xs mt-0.5">{closedTrades.length} closed trades</div>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
+                <div className={`text-3xl font-bold mb-1 ${winRate != null && winRate >= 50 ? "text-green-400" : "text-red-400"}`}>
+                  {winRate != null ? `${winRate.toFixed(1)}%` : "N/A"}
+                </div>
+                <div className="text-white text-sm font-medium">Win Rate</div>
+                <div className="text-gray-500 text-xs mt-0.5">{wins.length}W / {losses.length}L</div>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
+                <div className={`text-3xl font-bold mb-1 ${profitFactor >= 1 ? "text-green-400" : "text-red-400"}`}>
+                  {isFinite(profitFactor) ? profitFactor.toFixed(2) : "∞"}
+                </div>
+                <div className="text-white text-sm font-medium">Profit Factor</div>
+                <div className="text-gray-500 text-xs mt-0.5">Gross win / gross loss</div>
+              </div>
+            </div>
+
+            {/* Secondary metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <MetricCard label="Avg Win" value={avgWin != null ? fmt(avgWin, 2, "$") : "N/A"} deltaColor="positive" />
+              <MetricCard label="Avg Loss" value={avgLoss != null ? fmt(avgLoss, 2, "$") : "N/A"} deltaColor="negative" />
+              <MetricCard
+                label="Best Trade"
+                value={bestTrade?.pnl != null ? fmt(bestTrade.pnl, 2, "$") : "N/A"}
+                delta={bestTrade ? new Date(bestTrade.timestamp).toLocaleDateString() : undefined}
+                deltaColor="positive"
+              />
+              <MetricCard
+                label="Worst Trade"
+                value={worstTrade?.pnl != null ? fmt(worstTrade.pnl, 2, "$") : "N/A"}
+                delta={worstTrade ? new Date(worstTrade.timestamp).toLocaleDateString() : undefined}
+                deltaColor="negative"
+              />
+            </div>
+
+            {/* Cumulative PnL chart */}
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
+              <h3 className="text-white font-semibold mb-1">Cumulative PnL</h3>
+              <p className="text-gray-500 text-xs mb-5">Running total profit/loss across all {closedTrades.length} closed trades</p>
+              {cumulativePnlData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={260}>
+                  <AreaChart data={cumulativePnlData} margin={{ left: 10, right: 10 }}>
+                    <defs>
+                      <linearGradient id="pnlGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="#1f2937" strokeDasharray="3 3" />
+                    <XAxis dataKey="n" tick={{ fill: "#6b7280", fontSize: 10 }} axisLine={false} tickLine={false}
+                      label={{ value: "Trade #", position: "insideBottomRight", offset: -5, fill: "#6b7280", fontSize: 11 }} />
+                    <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} width={65}
+                      tickFormatter={(v) => `$${v}`} />
+                    <Tooltip
+                      contentStyle={{ background: "#111827", border: "1px solid #1f2937", borderRadius: 8 }}
+                      labelFormatter={(n) => `Trade #${n}`}
+                      formatter={(v: number | undefined, name: string | undefined) => [`$${(v ?? 0).toFixed(2)}`, name === "cumPnl" ? "Cumulative PnL" : "Trade PnL"] as [string, string]}
+                    />
+                    <Area type="monotone" dataKey="cumPnl" stroke="#22c55e" strokeWidth={2} fill="url(#pnlGrad)" dot={false} name="cumPnl" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[260px] flex items-center justify-center text-gray-600 text-sm">No closed trades yet</div>
+              )}
+            </div>
+
+            {/* Per-trade PnL bars */}
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
+              <h3 className="text-white font-semibold mb-1">Trade PnL</h3>
+              <p className="text-gray-500 text-xs mb-5">
+                Last {tradeBars.length} trades — green = profit, red = loss
+              </p>
+              {tradeBars.length > 0 ? (
+                <ResponsiveContainer width="100%" height={220}>
+                  <ComposedChart data={tradeBars} margin={{ left: 10, right: 10 }}>
+                    <CartesianGrid stroke="#1f2937" strokeDasharray="3 3" />
+                    <XAxis dataKey="n" tick={{ fill: "#6b7280", fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} width={65}
+                      tickFormatter={(v) => `$${v}`} />
+                    <Tooltip
+                      contentStyle={{ background: "#111827", border: "1px solid #1f2937", borderRadius: 8 }}
+                      labelFormatter={(n) => `Trade #${n}`}
+                      formatter={(v: number | undefined) => [`$${(v ?? 0).toFixed(2)}`, "PnL"]}
+                    />
+                    <Bar dataKey="pnl" name="PnL" radius={[2, 2, 0, 0]}>
+                      {tradeBars.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? "#22c55e" : "#ef4444"} />
+                      ))}
+                    </Bar>
+                  </ComposedChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[220px] flex items-center justify-center text-gray-600 text-sm">No closed trades yet</div>
+              )}
+            </div>
+
+            {/* Balance history */}
+            {balanceChartData.length > 1 && (
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+                <h3 className="text-white font-semibold mb-1">Account Balance</h3>
+                <p className="text-gray-500 text-xs mb-5">Balance snapshots over time</p>
+                <ResponsiveContainer width="100%" height={180}>
+                  <AreaChart data={balanceChartData}>
+                    <defs>
+                      <linearGradient id="balGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f8ac07" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#f8ac07" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="#1f2937" strokeDasharray="3 3" />
+                    <XAxis dataKey="date" tick={{ fill: "#6b7280", fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} width={65}
+                      tickFormatter={(v) => `$${v.toLocaleString()}`} domain={["auto", "auto"]} />
+                    <Tooltip
+                      contentStyle={{ background: "#111827", border: "1px solid #1f2937", borderRadius: 8 }}
+                      itemStyle={{ color: "#f8ac07" }}
+                      formatter={(v: number | undefined) => [`$${(v ?? 0).toLocaleString()}`, "Balance"]}
+                    />
+                    <Area type="monotone" dataKey="balance" stroke="#f8ac07" strokeWidth={2} fill="url(#balGrad)" dot={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </>
+        )}
+
         {botState?.updated_at && (
           <p className="text-gray-700 text-xs text-center mt-6">
             Last sync: {new Date(botState.updated_at).toLocaleString()}
