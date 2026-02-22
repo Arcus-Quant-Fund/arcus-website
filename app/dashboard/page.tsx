@@ -27,21 +27,21 @@ export default async function DashboardPage() {
     .eq("client_id", botId)
     .single();
 
-  // 3 — Fetch price data (last 500 candles, ascending for chart)
+  // 3 — Fetch price data (last 2000 candles for chart history)
   const { data: priceRows } = await supabase
     .from("price_data")
     .select("timestamp, open, high, low, close, volume, vwap, vwap_ema")
     .eq("client_id", botId)
     .order("timestamp", { ascending: false })
-    .limit(500);
+    .limit(2000);
 
-  // 4 — Fetch trade log (most recent 200)
+  // 4 — Fetch trade log (most recent 500)
   const { data: tradeRows } = await supabase
     .from("trade_log")
     .select("trade_id, timestamp, symbol, side, price, quantity, amount, pnl, pnl_percent, reason")
     .eq("client_id", botId)
     .order("timestamp", { ascending: false })
-    .limit(200);
+    .limit(500);
 
   // 5 — Fetch balance history (last 100 snapshots, ascending for chart)
   const { data: balanceRows } = await supabase

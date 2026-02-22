@@ -122,13 +122,13 @@ export default function DashboardClient({ session, botState, priceData, trades, 
     return () => clearInterval(id);
   }, []);
 
-  // Staleness: sync runs every 60s — >2 min = stale, >5 min = offline
+  // Staleness: sync runs every 60s — >5 min = delayed, >8 min = offline
   const lastSync = botState?.updated_at ? new Date(botState.updated_at).getTime() : null;
   const ageSeconds = lastSync ? (now - lastSync) / 1000 : null;
   const liveStatus =
     ageSeconds === null ? "unknown"
-    : ageSeconds < 120   ? "live"
-    : ageSeconds < 300   ? "delayed"
+    : ageSeconds < 300   ? "live"
+    : ageSeconds < 480   ? "delayed"
     : "offline";
 
   const liveConfig = {
@@ -180,9 +180,10 @@ export default function DashboardClient({ session, botState, priceData, trades, 
   const bestTrade = closedTrades.reduce((best, t) => (t.pnl ?? -Infinity) > (best?.pnl ?? -Infinity) ? t : best, closedTrades[0]);
   const worstTrade = closedTrades.reduce((worst, t) => (t.pnl ?? Infinity) < (worst?.pnl ?? Infinity) ? t : worst, closedTrades[0]);
 
-  // ROI: investment = buy amount / leverage (3.5x isolated margin)
+  // ROI: investment = buy amount / leverage
+  // BUY trades never carry PnL so they're not in closedTrades — pull from all trades
   const leverage = botState?.leverage ?? 3.5;
-  const buyTrades = closedTrades.filter(t => t.side?.toUpperCase() === "BUY");
+  const buyTrades = trades.filter(t => t.side?.toUpperCase() === "BUY" && (t.amount ?? 0) > 0);
   const totalInvested = buyTrades.reduce((s, t) => s + (t.amount ?? 0) / leverage, 0);
   const roiPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : null;
   const currentBalance = botState?.current_amount ?? null;
