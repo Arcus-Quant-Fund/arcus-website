@@ -46,6 +46,35 @@ type Props = {
   symbol?: string;
 };
 
+// Resample 1-min candles into N-minute buckets.
+// Produces proper OHLCV candles and averaged VWAP EMA per bucket.
+function resample(data: PricePoint[], intervalMin: number): PricePoint[] {
+  const intervalSec = intervalMin * 60;
+  const buckets = new Map<number, PricePoint[]>();
+  for (const p of data) {
+    const sec = Math.floor(new Date(p.timestamp).getTime() / 1000);
+    const bucket = sec - (sec % intervalSec);
+    if (!buckets.has(bucket)) buckets.set(bucket, []);
+    buckets.get(bucket)!.push(p);
+  }
+  return [...buckets.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([bucket, pts]) => {
+      const vwapPts = pts.filter((p) => p.vwap_ema > 0);
+      return {
+        timestamp: new Date(bucket * 1000).toISOString(),
+        open:  pts[0].open,
+        high:  Math.max(...pts.map((p) => p.high)),
+        low:   Math.min(...pts.map((p) => p.low)),
+        close: pts[pts.length - 1].close,
+        volume: pts.reduce((s, p) => s + p.volume, 0),
+        vwap_ema: vwapPts.length
+          ? vwapPts.reduce((s, p) => s + p.vwap_ema, 0) / vwapPts.length
+          : 0,
+      };
+    });
+}
+
 export default function TradingChart({ priceData, trades, botState, symbol = "XRPUSDT" }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -54,10 +83,8 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
   useEffect(() => {
     if (!containerRef.current || priceData.length === 0) return;
 
-    // Sort price data ascending
-    const sorted = [...priceData].sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
+    // Resample 1-min candles to 1h so 30 days → 720 readable bars
+    const sorted = resample(priceData, 60);
 
     // Integer seconds — Math.floor prevents float precision mismatches that
     // cause lightweight-charts to silently drop markers
@@ -249,7 +276,7 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-white font-semibold">{symbol} — Candlestick & VWAP EMA</h3>
+          <h3 className="text-white font-semibold">{symbol} — Candlestick & VWAP EMA (1h)</h3>
           <p className="text-gray-500 text-xs mt-1 flex items-center gap-4 flex-wrap">
             <span><span className="text-green-400 font-bold">▲</span> Buy</span>
             <span><span className="text-red-400 font-bold">▼</span> Sell+PnL</span>
@@ -263,7 +290,8 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
           </p>
         </div>
         <div className="text-gray-600 text-xs text-right">
-          <div>{priceData.length.toLocaleString()} candles</div>
+          <div>{Math.round(priceData.length / 60)} candles (1h)</div>
+          <div className="text-gray-700">{priceData.length.toLocaleString()} raw 1m</div>
           <div>{trades.length} trades</div>
         </div>
       </div>
