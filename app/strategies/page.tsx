@@ -108,7 +108,7 @@ const comingSoon = [
   {
     icon: <Zap size={20} className="text-gold" />,
     name: "Flash Crash Detector",
-    desc: "Monitors abnormal price velocity and liquidity vacuums characteristic of flash crashes. Exits open positions instantly on trigger; optionally re-enters post-stabilisation.",
+    desc: "Detects flash crashes in real time using abnormal price velocity and liquidity vacuum signals. Once the crash is confirmed, enters a high-leverage long position to capture the sharp recovery move as price snaps back.",
   },
   {
     icon: <Layers size={20} className="text-gold" />,
