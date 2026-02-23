@@ -239,12 +239,11 @@ export default function TrackRecordClient({
               </p>
               <p className="text-gray-400 text-sm leading-relaxed">
                 <span className="text-white font-semibold">Why only one asset?</span>{" "}
-                Finding a reliable edge requires extensive compute — backtests,
-                walk-forward validation, parameter optimisation, and Monte Carlo
-                simulation across years of historical data. With a small team, we
-                test and validate one asset at a time rather than spreading thin
-                across many. Every asset we deploy has been properly stress-tested,
-                not just curve-fitted.
+                Finding a reliable edge requires serious compute, time, and patience —
+                backtests, walk-forward validation, parameter optimisation, Monte Carlo
+                simulation, and then a live run to confirm the edge holds in real market
+                conditions. Each asset is its own full cycle. With a small team we do
+                one properly rather than many superficially.
               </p>
               <p className="text-gray-500 text-xs border-t border-gray-800 pt-3">
                 Individual client performance is confidential and not shown publicly.
