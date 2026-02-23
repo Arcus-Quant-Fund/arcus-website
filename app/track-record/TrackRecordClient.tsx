@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
+import TradeHistoryChart from "@/components/TradeHistoryChart";
 
 type PerfStats = {
   total_pnl: number;
@@ -26,6 +27,15 @@ type Trade = {
   pnl: number;
   pnl_percent: number;
   reason: string;
+};
+
+type ChartTrade = {
+  trade_id: string;
+  timestamp: string;
+  side: string;
+  price: number;
+  pnl: number | null;
+  amount: number | null;
 };
 
 type KeyEvent = {
@@ -65,10 +75,12 @@ function formatUpdated(iso: string) {
 export default function TrackRecordClient({
   stats,
   trades,
+  allTrades,
   keyEvents,
 }: {
   stats: PerfStats;
   trades: Trade[];
+  allTrades: ChartTrade[];
   keyEvents: KeyEvent[];
 }) {
   // Build equity curve from live trade data
@@ -205,6 +217,41 @@ export default function TrackRecordClient({
               <span>{periodEnd}</span>
             </div>
             <p className="text-gray-600 text-xs mt-2">Hover each bar for trade details. Gold = major move (&gt;20%).</p>
+          </div>
+        )}
+
+        {/* 4h chart with all trade markers */}
+        {allTrades.length > 0 && (
+          <div className="mb-10">
+            <TradeHistoryChart
+              priceData={[]}
+              trades={allTrades}
+              symbol="XRPUSDT"
+            />
+            {/* Context note */}
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mt-4 space-y-3">
+              <p className="text-gray-400 text-sm leading-relaxed">
+                <span className="text-white font-semibold">Asset selection.</span>{" "}
+                XRP/USDT is our primary alpha pair — it produced the best results
+                across our backtests and optimisation runs. You can request a
+                different asset, but understand this is the configuration we have
+                the most confidence in.
+              </p>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                <span className="text-white font-semibold">Why only one asset?</span>{" "}
+                Finding a reliable edge requires extensive compute — backtests,
+                walk-forward validation, parameter optimisation, and Monte Carlo
+                simulation across years of historical data. With a small team, we
+                test and validate one asset at a time rather than spreading thin
+                across many. Every asset we deploy has been properly stress-tested,
+                not just curve-fitted.
+              </p>
+              <p className="text-gray-500 text-xs border-t border-gray-800 pt-3">
+                Individual client performance is confidential and not shown publicly.
+                The track record above reflects our own trading capital deployed
+                under the same strategy and parameters offered to clients.
+              </p>
+            </div>
           </div>
         )}
 
