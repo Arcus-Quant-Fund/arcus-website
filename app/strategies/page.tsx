@@ -14,7 +14,7 @@ const strategies = [
       "Directional Change (DC) algorithm combined with VWAP and EMA filters. Captures momentum moves in high-liquidity crypto pairs across 24/7 markets. Designed to cut losers fast and let winners run — low win rate, high profit factor. Runs continuously on cloud infrastructure with no human intervention.",
     metrics: [
       { label: "Sharpe Ratio", value: "2.39" },
-      { label: "Profit Factor", value: "2.33" },
+      { label: "Profit Factor", value: "2.21" },
       { label: "Win Rate", value: "54.2%" },
       { label: "Live Since", value: "Sep 2025" },
     ],

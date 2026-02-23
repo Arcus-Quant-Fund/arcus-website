@@ -34,10 +34,10 @@ const trades = [
 const maxEquity = Math.max(...trades.map(t => t.equity));
 
 const stats = [
-  { value: "2.39",   label: "Sharpe Ratio",     sub: "Annualised" },
-  { value: "2.33",   label: "Profit Factor",     sub: "Wins / losses" },
-  { value: "54.2%",  label: "Win Rate",          sub: "13 wins / 11 losses" },
-  { value: "+158.8%",label: "Cumulative Return", sub: "Sep 2025 – Feb 2026" },
+  { value: "+$1,194.89", label: "Total P&L",     sub: "Live trading · USDT" },
+  { value: "2.21",       label: "Profit Factor", sub: "Gross wins ÷ gross losses" },
+  { value: "54.2%",      label: "Win Rate",      sub: "13 wins / 11 losses" },
+  { value: "2.39",       label: "Sharpe Ratio",  sub: "Annualised" },
 ];
 
 export default function TrackRecordPage() {
@@ -77,9 +77,9 @@ export default function TrackRecordPage() {
         {/* Secondary stats */}
         <div className="grid grid-cols-3 gap-4 mb-12">
           {[
-            { value: "−30.3%", label: "Max Drawdown", sub: "During Oct 2025 crash" },
-            { value: "+16.7%", label: "Avg Win",       sub: "Per trade" },
-            { value: "−8.4%",  label: "Avg Loss",      sub: "Per trade" },
+            { value: "$420.18",  label: "Best Trade",   sub: "Nov 25, 2025" },
+            { value: "$167.89",  label: "Avg Win",      sub: "Per winning trade" },
+            { value: "−$89.78", label: "Avg Loss",      sub: "Per losing trade" },
           ].map((s) => (
             <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
               <div className="text-xl font-bold text-white mb-1">{s.value}</div>
