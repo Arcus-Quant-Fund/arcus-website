@@ -13,12 +13,12 @@ const strategies = [
     description:
       "Directional Change (DC) algorithm combined with VWAP and EMA filters. Captures momentum moves in high-liquidity crypto pairs across 24/7 markets. Designed to cut losers fast and let winners run — low win rate, high profit factor. Runs continuously on cloud infrastructure with no human intervention.",
     metrics: [
-      { label: "Sharpe Ratio", value: "3.36" },
-      { label: "Profit Factor", value: "1.77" },
-      { label: "Win Rate", value: "38%" },
-      { label: "Live Since", value: "18+ mo" },
+      { label: "Sharpe Ratio", value: "2.39" },
+      { label: "Profit Factor", value: "2.33" },
+      { label: "Win Rate", value: "54.2%" },
+      { label: "Live Since", value: "Sep 2025" },
     ],
-    note: "Live on XRP/USDT with isolated margin. 1,017+ trades logged over 90-day window.",
+    note: "24 closed trades · XRP/USDT perpetuals · 3.5× isolated margin · Binance. Full trade log on Track Record page.",
   },
   {
     icon: <Activity size={24} className="text-gold" />,
