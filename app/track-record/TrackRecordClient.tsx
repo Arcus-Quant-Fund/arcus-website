@@ -147,20 +147,10 @@ export default function TrackRecordClient({
 
         {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-          {/* Compound Return — with hover disclaimer overlay */}
-          <div className="relative group bg-gray-900 border border-gray-800 rounded-xl p-5 text-center cursor-default">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
             <div className="text-2xl font-bold text-gold mb-1">+{(lastEquity - 100).toFixed(1)}%</div>
             <div className="text-white text-sm font-medium mb-0.5">Compound Return</div>
-            <div className="text-gray-500 text-xs">
-              $1M scaled → +${Math.round((lastEquity - 100) / 100 * 1_000_000).toLocaleString("en-US")}
-            </div>
-            {/* Hover overlay */}
-            <div className="absolute inset-0 rounded-xl bg-gray-950/95 border border-gray-700 p-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-              <p className="text-gray-300 text-xs leading-relaxed text-left">
-                <span className="text-white font-semibold block mb-1">Hypothetical illustration</span>
-                The {(lastEquity - 100).toFixed(1)}% return reflects actual closed trades on our own capital. The $1M figure scales that return proportionally — the strategy was not deployed with $1M.
-              </p>
-            </div>
+            <div className="text-gray-500 text-xs">On own capital · Sep 2025</div>
           </div>
 
           {[
