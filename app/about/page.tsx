@@ -44,9 +44,10 @@ export default function AboutPage() {
                   </p>
                   <p className="text-gray-400 leading-relaxed mb-4">
                     18+ months of live systematic trading across crypto perpetual futures and equity
-                    markets. Industry experience spans audit, asset management, and quantitative
-                    research — providing a full-stack understanding of how capital is deployed,
-                    risk is managed, and performance is verified at an institutional level.
+                    markets. Industry experience spans audit, asset management, quantitative research,
+                    and decentralised finance — providing a full-stack understanding of how capital
+                    is deployed, risk is managed, and performance is verified across both traditional
+                    and on-chain markets.
                   </p>
                 </div>
               </div>
