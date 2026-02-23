@@ -34,10 +34,10 @@ const trades = [
 const maxEquity = Math.max(...trades.map(t => t.equity));
 
 const stats = [
-  { value: "+$1,194.89", label: "Total P&L",     sub: "Live trading · USDT" },
+  { value: "+$1,194.89", label: "Total P&L",     sub: "Actual USDT gained" },
   { value: "2.21",       label: "Profit Factor", sub: "Gross wins ÷ gross losses" },
   { value: "54.2%",      label: "Win Rate",      sub: "13 wins / 11 losses" },
-  { value: "2.39",       label: "Sharpe Ratio",  sub: "Annualised" },
+  { value: "2.44",       label: "Sharpe Ratio",  sub: "Annualised on margin returns" },
 ];
 
 export default function TrackRecordPage() {
@@ -274,24 +274,58 @@ export default function TrackRecordPage() {
           </div>
         </div>
 
-        {/* Transparency note */}
+        {/* How we calculate */}
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-10">
-          <h3 className="text-white font-bold text-lg mb-4">Verification</h3>
-          <div className="space-y-3 text-gray-400 text-sm leading-relaxed">
-            <p>
-              All figures above are pulled directly from the live trading database on our
-              Oracle Cloud server. No aggregation. No smoothing. Every trade timestamped
-              and recorded the moment it executes.
-            </p>
-            <p>
-              During onboarding, we share raw trade logs and exchange account statements
-              directly. You can cross-reference every trade on the Binance order history
-              of the account.
-            </p>
-            <p>
-              Percentages reflect leveraged position returns (3.5× isolated margin on
-              XRP/USDT perpetuals). The leverage amplifies both gains and losses.
-            </p>
+          <h3 className="text-white font-bold text-lg mb-5">How Every Number Is Calculated</h3>
+          <div className="space-y-5">
+
+            <div>
+              <div className="text-gold text-sm font-semibold mb-1">P&amp;L (USD) — actual money made or lost</div>
+              <div className="text-gray-400 text-sm leading-relaxed">
+                <code className="text-gray-300 bg-gray-800 px-1.5 py-0.5 rounded text-xs">P&amp;L = (sell_price − buy_price) × quantity</code>
+                <br />This is the real dollar gain or loss from the price movement on your position. It does not
+                double-count leverage. If XRP moves 5% on a $6,000 position, you gain or lose $300 — and that
+                is what the P&amp;L field records.
+              </div>
+            </div>
+
+            <div>
+              <div className="text-gold text-sm font-semibold mb-1">Margin (actual investment per trade)</div>
+              <div className="text-gray-400 text-sm leading-relaxed">
+                <code className="text-gray-300 bg-gray-800 px-1.5 py-0.5 rounded text-xs">Margin = position_size ÷ 3.5</code>
+                <br />With 3.5× isolated margin, one third of the position is your own capital; the rest is borrowed
+                from the exchange. The margin is the actual USDT the account has at risk for each trade.
+                For example, the Oct 11 position was $6,478 total — but only $1,851 was margin (real capital at risk).
+              </div>
+            </div>
+
+            <div>
+              <div className="text-gold text-sm font-semibold mb-1">ROI % — return on actual capital deployed</div>
+              <div className="text-gray-400 text-sm leading-relaxed">
+                <code className="text-gray-300 bg-gray-800 px-1.5 py-0.5 rounded text-xs">ROI% = P&amp;L ÷ Margin × 100</code>
+                <br />This is verified against the database on all 24 trades — they match to within 0.05%.
+                Total ROI of 123.89% is the sum of per-trade ROIs across all 24 trades. Position sizes varied
+                because funds were added and withdrawn during the period.
+              </div>
+            </div>
+
+            <div>
+              <div className="text-gold text-sm font-semibold mb-1">Profit Factor</div>
+              <div className="text-gray-400 text-sm leading-relaxed">
+                <code className="text-gray-300 bg-gray-800 px-1.5 py-0.5 rounded text-xs">PF = Gross wins ($) ÷ Gross losses ($) = $2,182.52 ÷ $987.63 = 2.21</code>
+                <br />Dollar-based. For every $1 lost, the strategy returned $2.21 in wins.
+              </div>
+            </div>
+
+            <div>
+              <div className="text-gold text-sm font-semibold mb-1">Verification</div>
+              <div className="text-gray-400 text-sm leading-relaxed">
+                All figures are pulled directly from the live trading database on our Oracle Cloud server.
+                Every trade is timestamped to the second. During onboarding we share raw trade logs and
+                Binance order history — every trade is cross-referenceable on the exchange itself.
+              </div>
+            </div>
+
           </div>
         </div>
 
