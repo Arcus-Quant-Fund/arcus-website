@@ -167,6 +167,20 @@ export default function TrackRecordClient({
         </div>
 
 
+        {/* Alpha callout */}
+        <div className="bg-gold/5 border border-gold/20 rounded-2xl p-6 mb-10">
+          <p className="text-white font-semibold text-base mb-2">
+            The bot made money in a falling market.
+          </p>
+          <p className="text-gray-400 text-sm leading-relaxed">
+            This period included a −40% XRP flash crash in October 2025 — one of the largest
+            single-asset liquidation events in crypto history — and multiple sustained selloffs
+            through early 2026. The strategy absorbed those drawdowns, recovered, and compounded
+            to a new equity high. Generating positive returns when the underlying asset falls is
+            the definition of alpha.
+          </p>
+        </div>
+
         {/* Equity curve */}
         {displayTrades && (
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-10">
