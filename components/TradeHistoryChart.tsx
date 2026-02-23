@@ -31,25 +31,24 @@ type Props = {
   symbol?: string;
 };
 
-const PAGE_CANDLES = 720;          // Kraken max per request
-const INTERVAL_4H_SEC = 4 * 3600; // 4h in seconds
+// Binance klines — supports arbitrary historical start dates, 1000 candles per request
+const BINANCE_LIMIT = 1000;
+const INTERVAL_4H_MS = 4 * 3600 * 1000;
 
-type KrakenRow = [number, string, string, string, string, string, string, number];
+type BinanceKline = [number, string, string, string, string, string, ...unknown[]];
 
-async function fetchKrakenPage(since: number): Promise<PricePoint[]> {
-  const url = `https://api.kraken.com/0/public/OHLC?pair=XRPUSD&interval=240&since=${since}`;
+async function fetchBinancePage(startMs: number, endMs: number): Promise<PricePoint[]> {
+  const url = `https://api.binance.com/api/v3/klines?symbol=XRPUSDT&interval=4h&startTime=${startMs}&endTime=${endMs}&limit=${BINANCE_LIMIT}`;
   const r = await fetch(url);
-  if (!r.ok) throw new Error(`Kraken HTTP ${r.status}`);
-  const json = await r.json() as { error: string[]; result: Record<string, KrakenRow[]> & { last: number } };
-  if (json.error?.length > 0) throw new Error(json.error[0]);
-  const key = Object.keys(json.result).find((k) => k !== "last")!;
-  return (json.result[key] as KrakenRow[]).map((k) => ({
-    timestamp: new Date(k[0] * 1000).toISOString(),
-    open:  parseFloat(k[1]),
-    high:  parseFloat(k[2]),
-    low:   parseFloat(k[3]),
-    close: parseFloat(k[4]),
-    volume: parseFloat(k[6]),
+  if (!r.ok) throw new Error(`Binance HTTP ${r.status}`);
+  const json = await r.json() as BinanceKline[];
+  return json.map((k) => ({
+    timestamp: new Date(k[0] as number).toISOString(),
+    open:  parseFloat(k[1] as string),
+    high:  parseFloat(k[2] as string),
+    low:   parseFloat(k[3] as string),
+    close: parseFloat(k[4] as string),
+    volume: parseFloat(k[5] as string),
     vwap_ema: 0,
   }));
 }
@@ -61,7 +60,8 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
   const [error, setError]     = useState("");
   const [candles, setCandles] = useState<PricePoint[]>([]);
 
-  // Fetch Kraken 4h candles directly from browser — parallel pages, no server proxy
+  // Fetch Binance 4h candles directly from browser — parallel pages, no server proxy
+  // Binance supports arbitrary startTime (ms), so we get the full history back to first trade
   useEffect(() => {
     if (trades.length === 0) { setLoading(false); return; }
 
@@ -69,18 +69,21 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
       (min, t) => new Date(t.timestamp) < new Date(min) ? t.timestamp : min,
       trades[0].timestamp
     );
-    const startSec = Math.floor((new Date(earliest).getTime() - 86_400_000) / 1000);
-    const nowSec   = Math.floor(Date.now() / 1000);
+    const startMs = new Date(earliest).getTime() - 86_400_000; // 1 day before first trade
+    const nowMs   = Date.now();
 
-    // Pre-compute page start times so we can fetch all in parallel
+    // 1000 candles × 4h = ~166 days per page; 6 pages = ~2.7 years of coverage
+    const PAGE_MS = BINANCE_LIMIT * INTERVAL_4H_MS;
     const pageStarts: number[] = [];
-    let s = startSec;
-    while (s < nowSec && pageStarts.length < 4) {
+    let s = startMs;
+    while (s < nowMs && pageStarts.length < 6) {
       pageStarts.push(s);
-      s += PAGE_CANDLES * INTERVAL_4H_SEC;
+      s += PAGE_MS;
     }
 
-    Promise.all(pageStarts.map(fetchKrakenPage))
+    Promise.all(
+      pageStarts.map((ps) => fetchBinancePage(ps, Math.min(ps + PAGE_MS, nowMs)))
+    )
       .then((pages) => {
         // Merge, deduplicate, sort
         const seen = new Set<number>();

@@ -40,7 +40,7 @@ export default function AboutPage() {
                     Finance major with a Computer Science Engineering minor specialising in Big Data &
                     High-Performance Computing (IUB). Builds and operates fully automated trading
                     systems — strategy research, backtesting, execution engines, cloud infrastructure,
-                    and client dashboard. CFA Level I Candidate (June 2026).
+                    and client dashboard.
                   </p>
                   <p className="text-gray-400 leading-relaxed">
                     18+ months of live systematic trading across crypto perpetual futures and equity

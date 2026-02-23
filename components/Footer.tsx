@@ -9,7 +9,7 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="mb-3">
-              <Image src="/logo.png" alt="Arcus Quant Fund" width={130} height={44} className="rounded bg-white px-2 py-1" />
+              <Image src="/logo.png" alt="Arcus Quant Fund" width={130} height={44} className="object-contain" />
             </div>
             <p className="text-gray-400 text-sm leading-relaxed">
               Systematic algorithmic trading strategies for high-net-worth individuals.

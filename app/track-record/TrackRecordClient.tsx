@@ -148,7 +148,11 @@ export default function TrackRecordClient({
         {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           {[
-            { value: `+$${totalPnl.toFixed(2)}`, label: "Total P&L",     sub: "Actual USDT gained" },
+            {
+              value: `+${(lastEquity - 100).toFixed(1)}%`,
+              label: "Compound Return",
+              sub: `$1M → +$${Math.round((lastEquity - 100) / 100 * 1_000_000).toLocaleString("en-US")}`,
+            },
             { value: pf.toFixed(2),               label: "Profit Factor", sub: "Gross wins ÷ gross losses" },
             { value: `${winRate.toFixed(1)}%`,    label: "Win Rate",      sub: `${winTrades}W / ${lossTrades}L` },
             { value: sharpe.toFixed(2),            label: "Sharpe Ratio",  sub: "Annualised on margin returns" },
@@ -258,14 +262,25 @@ export default function TrackRecordClient({
         {displayTrades && (
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-10">
             <h2 className="text-white font-bold text-lg mb-1">Full Trade Log</h2>
-            <p className="text-gray-500 text-sm mb-6">
+            <p className="text-gray-500 text-sm mb-4">
               XRP/USDT perpetuals · 3.5× isolated margin · Binance
             </p>
-            <div className="space-y-2">
-              {displayTrades.map((t, i) => (
+            {/* Column headers */}
+            <div className="flex items-center justify-between px-3 pb-2 border-b border-gray-800 mb-1">
+              <span className="text-gray-600 text-xs w-24 flex-shrink-0">Date</span>
+              <div className="flex items-center gap-4 flex-shrink-0">
+                <span className="text-gray-600 text-xs w-16 text-right">Price %</span>
+                <span className="text-gray-600 text-xs w-20 text-right">Margin %</span>
+                <span className="text-gray-600 text-xs w-14 text-right">Equity</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              {displayTrades.map((t, i) => {
+                const unlevPct = t.pnl_percent / 3.5;
+                return (
                 <div
                   key={i}
-                  className={`flex items-center justify-between py-2.5 px-3 rounded-lg ${
+                  className={`flex items-center justify-between py-2 px-3 rounded-lg ${
                     t.note
                       ? "bg-gray-800/60 border border-gray-700/50"
                       : "hover:bg-gray-800/30 transition-colors"
@@ -285,17 +300,23 @@ export default function TrackRecordClient({
                     )}
                   </div>
                   <div className="flex items-center gap-4 flex-shrink-0">
-                    <span className={`text-sm font-semibold w-16 text-right ${
+                    <span className={`text-xs w-16 text-right ${
+                      unlevPct > 0 ? "text-green-500/80" : "text-red-500/80"
+                    }`}>
+                      {unlevPct > 0 ? "+" : ""}{unlevPct.toFixed(2)}%
+                    </span>
+                    <span className={`text-sm font-semibold w-20 text-right ${
                       t.pnl_percent > 0 ? "text-green-400" : "text-red-400"
                     }`}>
                       {t.pnl_percent > 0 ? "+" : ""}{t.pnl_percent.toFixed(2)}%
                     </span>
-                    <span className="text-gray-500 text-xs w-16 text-right">
+                    <span className="text-gray-500 text-xs w-14 text-right">
                       {t.equity.toFixed(1)}
                     </span>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-800">
               <span className="text-gray-400 text-sm font-medium">Final equity</span>
@@ -392,7 +413,7 @@ export default function TrackRecordClient({
               },
               {
                 period: "Sep 2025 – Present",
-                label: "ETH Margin Bot (Client Strategy)",
+                label: "XRP/USDT Margin Strategy",
                 desc: `Same DC-VWAP algorithm on XRPUSDT perpetuals with 3.5× isolated margin. ${totalTrades} closed trades. Win rate ${winRate.toFixed(1)}%, profit factor ${pf.toFixed(2)}, Sharpe ${sharpe.toFixed(2)}. This is the strategy offered to clients.`,
                 badge: "Live",
                 badgeColor: "green",
