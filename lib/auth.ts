@@ -1,16 +1,8 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import LinkedInProvider from "next-auth/providers/linkedin";
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    LinkedInProvider({
-      clientId: process.env.LINKEDIN_CLIENT_ID!,
-      clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
-      authorization: {
-        params: { scope: "openid profile email" },
-      },
-    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -51,26 +43,8 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   callbacks: {
-    async jwt({ token, user, account }) {
-      // Credentials login — user.id is the Supabase UUID
-      if (user && account?.provider === "credentials") {
-        token.id = user.id;
-      }
-      // LinkedIn login — look up the matching Supabase user by email
-      if (account?.provider === "linkedin" && token.email && !token.id) {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(token.email as string)}`,
-          {
-            headers: {
-              "apikey": process.env.SUPABASE_SERVICE_ROLE_KEY!,
-              "Authorization": `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
-            },
-          }
-        );
-        const data = await res.json() as { users?: { id: string; email: string }[] };
-        const match = data?.users?.find((u) => u.email === token.email);
-        if (match) token.id = match.id;
-      }
+    async jwt({ token, user }) {
+      if (user) token.id = user.id;
       return token;
     },
     async session({ session, token }) {
