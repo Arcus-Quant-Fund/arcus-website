@@ -92,15 +92,21 @@ function calcMargin(botState: NonNullable<BotState>, currentPrice: number) {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function MetricCard({ label, value, delta, deltaColor = "neutral", sub }:
-  { label: string; value: string; delta?: string; deltaColor?: "positive" | "negative" | "neutral"; sub?: string }) {
+function MetricCard({ label, value, delta, deltaColor = "neutral", sub, tooltip }:
+  { label: string; value: string; delta?: string; deltaColor?: "positive" | "negative" | "neutral"; sub?: string; tooltip?: string }) {
   const dc = deltaColor === "positive" ? "text-green-400" : deltaColor === "negative" ? "text-red-400" : "text-gray-400";
   return (
-    <div className="bg-gray-800/60 rounded-xl p-4">
+    <div className={`relative bg-gray-800/60 rounded-xl p-4 ${tooltip ? "group cursor-help" : ""}`}>
       <div className="text-gray-500 text-xs mb-1">{label}</div>
       <div className="text-white font-bold text-lg">{value}</div>
       {delta && <div className={`text-xs mt-0.5 ${dc}`}>{delta}</div>}
       {sub && <div className="text-gray-600 text-xs mt-0.5">{sub}</div>}
+      {tooltip && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-gray-800 border border-gray-700 rounded-xl p-3 text-xs text-gray-300 shadow-xl z-50 hidden group-hover:block pointer-events-none">
+          {tooltip}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-700" />
+        </div>
+      )}
     </div>
   );
 }
@@ -325,6 +331,7 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                   <MetricCard
                     label="Balance"
                     value={botState?.current_amount ? fmt(botState.current_amount, 2, "$") : "N/A"}
+                    tooltip="To make funds available for the bot, transfer funds to Isolated Margin (XRP/USDT) on Binance."
                   />
                 </div>
 
