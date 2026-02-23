@@ -1,17 +1,17 @@
 import Link from "next/link";
-import { ArrowRight, TrendingUp, Activity, BarChart2 } from "lucide-react";
+import { ArrowRight, TrendingUp, Activity, BarChart2, Globe } from "lucide-react";
 
 const strategies = [
   {
     icon: <TrendingUp size={24} className="text-gold" />,
     name: "DC-VWAP Trend Follower",
     market: "Crypto Perpetual Futures",
-    exchange: "Binance / Bybit",
+    exchange: "Binance · Bybit",
     type: "Trend Following",
     timeframe: "Intraday",
     status: "Live",
     description:
-      "Directional Change (DC) algorithm combined with VWAP and EMA filters. Captures momentum moves in high-liquidity crypto pairs. Designed to cut losers fast and let winners run — low win rate but high profit factor.",
+      "Directional Change (DC) algorithm combined with VWAP and EMA filters. Captures momentum moves in high-liquidity crypto pairs across 24/7 markets. Designed to cut losers fast and let winners run — low win rate, high profit factor. Runs continuously on cloud infrastructure with no human intervention.",
     metrics: [
       { label: "Sharpe Ratio", value: "3.36" },
       { label: "Profit Factor", value: "1.77" },
@@ -29,32 +29,32 @@ const strategies = [
     timeframe: "Daily",
     status: "Research",
     description:
-      "Based on peer-reviewed academic research on open interest as a hidden trend signal. Identifies directional bias from option OI distribution and trades the underlying. Strong long bias (73%) aligned with equity drift.",
+      "Based on peer-reviewed academic research on open interest as a hidden trend signal. Identifies directional bias from option OI distribution and trades the underlying equity. Strong long bias aligned with structural equity drift. Designed for clients on Interactive Brokers with options access.",
     metrics: [
       { label: "Long Bias", value: "73%" },
       { label: "Basis", value: "OI Signal" },
       { label: "Universe", value: "S&P 500" },
       { label: "Holding", value: "1-5 days" },
     ],
-    note: "Based on peer-reviewed academic research. Paper under review.",
+    note: "Based on peer-reviewed academic research. Paper under review. Deployment via Interactive Brokers API.",
   },
   {
     icon: <BarChart2 size={24} className="text-gold" />,
-    name: "DSE Multi-Bot Automated System",
+    name: "DSE Multi-Bot System",
     market: "Bangladesh Equities",
     exchange: "Dhaka Stock Exchange",
     type: "Systematic Intraday",
     timeframe: "Intraday",
-    status: "Development",
+    status: "Origin",
     description:
-      "Fully automated intraday trading system for the Dhaka Stock Exchange running 25+ independent bots simultaneously. Integrates directly with live market data and executes through a licensed broker platform. The system operates autonomously within market hours — zero manual intervention required. Strategy selection is driven by a HPC-optimised backtesting engine validated across 400+ DSE-listed equities and 10+ years of historical data.",
+      "Where our systematic trading began. We built and deployed 25+ simultaneous intraday bots on the Dhaka Stock Exchange — a market with no broker API, T+2 settlement, no short selling, and a 20-year structural decline. We automated execution through browser-level technology and validated strategies across 400+ DSE-listed stocks and 10+ years of historical data. The system made money in one of the hardest possible environments. That proof of concept drove our expansion into global, more liquid markets.",
     metrics: [
       { label: "Concurrent Bots", value: "25+" },
       { label: "Universe", value: "400+ stocks" },
       { label: "Backtest", value: "10+ yrs" },
-      { label: "Operation", value: "Fully Auto" },
+      { label: "Market Bias", value: "20yr decline" },
     ],
-    note: "In development. Live market data integration complete. Deployment pending final validation.",
+    note: "Our origin system. Demonstrated strategy robustness in an illiquid, API-free market before expansion to global assets.",
   },
 ];
 
@@ -62,7 +62,17 @@ const statusColor: Record<string, string> = {
   Live: "bg-green-500/10 text-green-400 border-green-500/20",
   Research: "bg-blue-500/10 text-blue-400 border-blue-500/20",
   Development: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+  Origin: "bg-purple-500/10 text-purple-400 border-purple-500/20",
 };
+
+const platforms = [
+  { name: "Binance", type: "Crypto", supports: ["Spot", "Perpetuals", "Margin"] },
+  { name: "Bybit", type: "Crypto", supports: ["Spot", "Perpetuals", "Margin"] },
+  { name: "Coinbase", type: "Crypto", supports: ["Spot", "Advanced Trade"] },
+  { name: "Interactive Brokers", type: "Equities & Options", supports: ["Stocks", "Options", "Futures", "Forex"] },
+  { name: "Alpaca", type: "US Equities", supports: ["Stocks", "Crypto"] },
+  { name: "MT4 / MT5", type: "Forex & CFDs", supports: ["Forex", "Commodities", "Indices"] },
+];
 
 export default function StrategiesPage() {
   return (
@@ -75,7 +85,23 @@ export default function StrategiesPage() {
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl">
             Every strategy is developed through rigorous backtesting and walk-forward validation before
-            touching real capital.
+            touching real capital. We started in one of the world&apos;s hardest markets — and expanded from there.
+          </p>
+        </div>
+
+        {/* Evolution callout */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-10">
+          <h2 className="text-white font-bold text-lg mb-3">Built in a Hard Market First</h2>
+          <p className="text-gray-400 leading-relaxed">
+            Our systematic trading began on the Dhaka Stock Exchange — a market that has been in structural
+            decline for over 20 years, with no short selling, T+2 settlement delays, and no broker API
+            access. We built automation layer by layer. The bots worked even there.
+          </p>
+          <p className="text-gray-400 leading-relaxed mt-3">
+            That proof of concept gave us the conviction to expand into more liquid, better-capitalised
+            global markets — crypto perpetuals, US equities, options, and beyond. Today our systems are
+            <strong className="text-white"> broker-agnostic</strong>: deployable on any institutional platform that
+            offers leverage, margin, and proper API access.
           </p>
         </div>
 
@@ -122,17 +148,55 @@ export default function StrategiesPage() {
           ))}
         </div>
 
+        {/* Bespoke / Broker-Agnostic section */}
+        <div className="mb-16">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
+              <Globe size={24} className="text-gold" />
+            </div>
+            <div>
+              <h2 className="text-white font-bold text-xl">Bespoke Client Configurations</h2>
+              <p className="text-gray-500 text-sm">Broker-agnostic · Built around your platform</p>
+            </div>
+          </div>
+
+          <p className="text-gray-400 leading-relaxed mb-6">
+            Our strategies are not locked to a single exchange. If your broker supports the instruments
+            our system requires — leverage, margin, derivatives, and API access — we can configure a
+            bespoke bot for your account. We work across institutional platforms covering crypto,
+            equities, options, forex, commodities, and indices.
+          </p>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {platforms.map((p) => (
+              <div key={p.name} className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gold/20 transition-colors">
+                <div className="text-white font-semibold text-sm mb-1">{p.name}</div>
+                <div className="text-gray-500 text-xs mb-2">{p.type}</div>
+                <div className="flex flex-wrap gap-1">
+                  {p.supports.map((s) => (
+                    <span key={s} className="px-2 py-0.5 bg-gray-800 rounded text-xs text-gray-400">{s}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-gray-600 text-xs mt-4">
+            Don&apos;t see your platform? Contact us — if it has a proper trading API with leverage and margin support, we can likely configure it.
+          </p>
+        </div>
+
         {/* CTA */}
         <div className="bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center mb-16">
-          <h3 className="text-2xl font-bold text-white mb-3">Want to Know More?</h3>
+          <h3 className="text-2xl font-bold text-white mb-3">Want a Bespoke Setup?</h3>
           <p className="text-gray-400 mb-6">
-            We share detailed strategy documentation with serious investors during the onboarding call.
+            Tell us your broker and capital size. We&apos;ll let you know if we can configure a strategy for your account.
           </p>
           <Link
             href="/contact"
             className="inline-flex items-center gap-2 px-6 py-3 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
           >
-            Schedule a Call <ArrowRight size={16} />
+            Get in Touch <ArrowRight size={16} />
           </Link>
         </div>
       </div>
