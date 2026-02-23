@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, BookOpen, TrendingUp, Award } from "lucide-react";
+import { ArrowRight, BookOpen, TrendingUp, Award, Users } from "lucide-react";
 
 
 export default function AboutPage() {
@@ -13,31 +13,89 @@ export default function AboutPage() {
             About <span className="gradient-text">Arcus</span>
           </h1>
           <p className="text-xl text-gray-400 leading-relaxed max-w-2xl">
-            A quant-driven trading operation built on research, automation, and systematic execution.
+            A quant-driven trading operation built on research, automation, and systematic execution —
+            led by a team combining computational finance and decades of academic and investment expertise.
           </p>
         </div>
 
-        {/* Founder section */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mb-10">
-          <div className="flex items-start gap-6">
-            <div className="flex-shrink-0 w-20 h-20 rounded-full overflow-hidden">
-              <Image src="/founder.jpg" alt="Shehzad Ahmed" width={80} height={80} className="w-full h-full object-cover" />
+        {/* Team */}
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-6">
+            <Users size={18} className="text-gold" />
+            <h2 className="text-white font-bold text-lg">The Team</h2>
+          </div>
+
+          <div className="flex flex-col gap-6">
+
+            {/* Shehzad */}
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
+              <div className="flex items-start gap-6">
+                <div className="flex-shrink-0 w-20 h-20 rounded-full overflow-hidden">
+                  <Image src="/founder.jpg" alt="Shehzad Ahmed" width={80} height={80} className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-1">Shehzad Ahmed</h2>
+                  <p className="text-gold text-sm font-medium mb-4">Founder & CEO · Computational Finance</p>
+                  <p className="text-gray-400 leading-relaxed mb-4">
+                    Finance major with a Computer Science Engineering minor specialising in Big Data &
+                    High-Performance Computing (IUB). Builds and operates fully automated trading
+                    systems — strategy research, backtesting, execution engines, cloud infrastructure,
+                    and client dashboard. CFA Level I Candidate (June 2026).
+                  </p>
+                  <p className="text-gray-400 leading-relaxed">
+                    18+ months of live systematic trading across crypto perpetual futures and equity
+                    markets. Research in financial market microstructure, algorithmic execution quality,
+                    and Shariah-compliant derivatives currently under peer review at international
+                    finance journals.
+                  </p>
+                </div>
+              </div>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-1">Shehzad Ahmed</h2>
-              <p className="text-gold text-sm font-medium mb-4">Founder & Fund Manager</p>
-              <p className="text-gray-400 leading-relaxed mb-4">
-                Quantitative finance professional with a Finance major and Computer Science Engineering minor
-                specialising in Big Data & High-Performance Computing. Career spans asset management,
-                audit, and live systematic trading across cryptocurrency and equity markets.
-              </p>
-              <p className="text-gray-400 leading-relaxed">
-                Develops and operates fully automated trading systems on cloud infrastructure — covering
-                strategy research, backtesting, execution, and risk management. Research in financial market
-                microstructure and algorithmic trading currently under peer review at an international
-                finance journal.
-              </p>
+
+            {/* Dr. Bhuyan */}
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
+              <div className="flex items-start gap-6">
+                <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-2xl font-bold text-gold">
+                  RB
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-1">Dr. Rafiq Bhuyan</h2>
+                  <p className="text-gold text-sm font-medium mb-4">Co-Founder & Strategic Advisor · Academic Finance</p>
+                  <p className="text-gray-400 leading-relaxed mb-4">
+                    Associate Professor of Finance & Economics at A&M University Alabama and Adjunct Professor
+                    at Independent University Bangladesh. PhD in Economics, Concordia University (Montreal).
+                    MS Finance, University of Illinois. Author of 80+ peer-reviewed journal articles in
+                    finance, economics, and entrepreneurship. Fulbright Scholar. Twice recipient of
+                    the Outstanding Researcher Award, California State University.
+                  </p>
+                  <p className="text-gray-400 leading-relaxed">
+                    Brings decades of academic research, institutional finance expertise, and private fund
+                    management experience to the venture. Former Purcell Chair Professor at Le Moyne College
+                    (New York) and faculty at USC, UC Davis, UC Riverside, Northeastern University, and
+                    the American University of Kuwait.
+                  </p>
+                </div>
+              </div>
             </div>
+
+            {/* Jahidul */}
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
+              <div className="flex items-start gap-6">
+                <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-2xl font-bold text-gold">
+                  JU
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-white mb-1">Jahidul</h2>
+                  <p className="text-gold text-sm font-medium mb-4">Operations</p>
+                  <p className="text-gray-400 leading-relaxed">
+                    Supports day-to-day fund operations, client communications, and administrative
+                    processes. Ensures the operational layer runs smoothly so the research and
+                    execution systems can focus on what they do best.
+                  </p>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -51,13 +109,13 @@ export default function AboutPage() {
             },
             {
               icon: <BookOpen className="text-gold" size={20} />,
-              title: "Research-Backed",
-              desc: "Strategies rooted in peer-reviewed academic research.",
+              title: "80+ Research Papers",
+              desc: "Co-founder's published academic output in finance and economics.",
             },
             {
               icon: <Award className="text-gold" size={20} />,
-              title: "Quant Research",
-              desc: "Strategies grounded in academic finance literature and statistical analysis.",
+              title: "Fulbright Scholar",
+              desc: "Academic credentials that back every strategy we deploy.",
             },
           ].map((c) => (
             <div key={c.title} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
@@ -73,18 +131,24 @@ export default function AboutPage() {
           <h2 className="text-2xl font-bold text-white mb-6">What Arcus Does</h2>
           <div className="space-y-4 text-gray-400 leading-relaxed">
             <p>
-              Arcus Quant Fund manages client capital through algorithmic trading strategies across cryptocurrency
-              perpetual futures and equity markets. Every strategy is developed through rigorous backtesting,
-              walk-forward validation, and Monte Carlo simulation before deployment with real capital.
+              Arcus Quant Fund manages client capital through algorithmic trading strategies across
+              cryptocurrency perpetual futures, equity, and options markets. Every strategy is
+              developed through rigorous backtesting, walk-forward validation, and Monte Carlo
+              simulation before deployment with real capital.
             </p>
             <p>
-              We operate on a performance-fee-only model — we earn nothing unless your account grows. Capital
-              stays in your own brokerage or exchange account at all times; we access it only through
-              trade-execution API keys that have no withdrawal permissions.
+              Our systems are broker-agnostic — configurable across Binance, Bybit, Interactive
+              Brokers, Coinbase, Alpaca, and MT4/MT5 platforms. If a client&apos;s broker supports
+              leverage, margin, and API access, we can build a bespoke configuration for their account.
             </p>
             <p>
-              Currently in pilot phase with live capital deployed, targeting $150-200k AUM across
-              3-5 clients by mid-2026.
+              We operate on a performance-fee-only model — we earn nothing unless your account grows.
+              Capital stays in your own brokerage or exchange account at all times; we access it only
+              through trade-execution API keys with no withdrawal permissions.
+            </p>
+            <p>
+              Currently in active growth phase with live capital deployed across client accounts.
+              Targeting registration in Dubai and the United States to support global operations.
             </p>
           </div>
         </div>
@@ -92,7 +156,7 @@ export default function AboutPage() {
         {/* CTA */}
         <div className="bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center">
           <h3 className="text-2xl font-bold text-white mb-3">Interested in Working Together?</h3>
-          <p className="text-gray-400 mb-6">We're selectively onboarding new clients. Minimum account size applies.</p>
+          <p className="text-gray-400 mb-6">We&apos;re selectively onboarding new clients. Minimum account size applies.</p>
           <Link
             href="/contact"
             className="inline-flex items-center gap-2 px-6 py-3 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
