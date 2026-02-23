@@ -50,7 +50,7 @@ export default function AboutPage() {
               </div>
             </div>
 
-            {/* Dr. Bhuyan */}
+            {/* Dr. Bhuyan — commented out pending permission
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
               <div className="flex items-start gap-6">
                 <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-2xl font-bold text-gold">
@@ -75,6 +75,7 @@ export default function AboutPage() {
                 </div>
               </div>
             </div>
+            */}
 
             {/* Jahidul */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
@@ -106,16 +107,9 @@ export default function AboutPage() {
               title: "18+ Months Live",
               desc: "Real capital deployed in live markets — not just backtests.",
             },
-            {
-              icon: <BookOpen className="text-gold" size={20} />,
-              title: "80+ Research Papers",
-              desc: "Co-founder's published academic output in finance and economics.",
-            },
-            {
-              icon: <Award className="text-gold" size={20} />,
-              title: "Fulbright Scholar",
-              desc: "Academic credentials that back every strategy we deploy.",
-            },
+            // Commented out pending Dr. Bhuyan permission
+            // { icon: <BookOpen className="text-gold" size={20} />, title: "80+ Research Papers", desc: "Co-founder's published academic output in finance and economics." },
+            // { icon: <Award className="text-gold" size={20} />, title: "Fulbright Scholar", desc: "Academic credentials that back every strategy we deploy." },
           ].map((c) => (
             <div key={c.title} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
               <div className="mb-3">{c.icon}</div>
