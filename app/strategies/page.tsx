@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, TrendingUp, Activity, BarChart2, Globe } from "lucide-react";
+import { ArrowRight, TrendingUp, Activity, BarChart2, Globe, Repeat2, Newspaper, Zap, Layers, Brain } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
 // Revalidate every 60 seconds — matches sync script interval
@@ -91,7 +91,36 @@ const statusColor: Record<string, string> = {
   Research: "bg-blue-500/10 text-blue-400 border-blue-500/20",
   Development: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
   Origin: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  "Coming Soon": "bg-amber-500/10 text-amber-400 border-amber-500/20",
 };
+
+const comingSoon = [
+  {
+    icon: <Repeat2 size={20} className="text-gold" />,
+    name: "Mean Reversion Bot",
+    desc: "Fades overextended moves back to statistical equilibrium. Uses z-score deviation from rolling mean to time counter-trend entries in high-liquidity pairs.",
+  },
+  {
+    icon: <Newspaper size={20} className="text-gold" />,
+    name: "Market News Bot",
+    desc: "Ingests real-time financial news feeds and executes on sentiment signals before price fully adjusts. NLP-driven with configurable asset universe.",
+  },
+  {
+    icon: <Zap size={20} className="text-gold" />,
+    name: "Flash Crash Detector",
+    desc: "Monitors abnormal price velocity and liquidity vacuums characteristic of flash crashes. Exits open positions instantly on trigger; optionally re-enters post-stabilisation.",
+  },
+  {
+    icon: <Layers size={20} className="text-gold" />,
+    name: "Multi-Timeframe Bot",
+    desc: "Requires trend alignment across 4h, 1h, and 15m before entry. Reduces false positives significantly — only trades when all timeframe signals agree.",
+  },
+  {
+    icon: <Brain size={20} className="text-gold" />,
+    name: "Regime Detection System",
+    desc: "Classifies market state as trending, mean-reverting, or high-volatility using hidden Markov models. Routes order flow to the appropriate sub-strategy for the current regime.",
+  },
+];
 
 const platforms = [
   { name: "Binance", type: "Crypto", supports: ["Spot", "Perpetuals", "Margin"] },
@@ -173,6 +202,32 @@ const platforms = [
               <p className="text-gray-600 text-xs">{s.note}</p>
             </div>
           ))}
+        </div>
+
+        {/* Coming Soon */}
+        <div className="mb-16">
+          <div className="flex items-center gap-3 mb-2">
+            <h2 className="text-white font-bold text-xl">In Development</h2>
+            <span className="px-2.5 py-0.5 rounded-full border text-xs font-medium bg-amber-500/10 text-amber-400 border-amber-500/20">
+              Coming Soon
+            </span>
+          </div>
+          <p className="text-gray-500 text-sm mb-6">
+            Strategies currently in research and backtesting. Each goes through the same full validation cycle before any live capital is deployed.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {comingSoon.map((s) => (
+              <div key={s.name} className="bg-gray-900/60 border border-gray-800 rounded-xl p-5 hover:border-amber-500/20 transition-colors">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
+                    {s.icon}
+                  </div>
+                  <span className="text-white font-semibold text-sm">{s.name}</span>
+                </div>
+                <p className="text-gray-500 text-xs leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Bespoke / Broker-Agnostic section */}

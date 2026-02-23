@@ -186,11 +186,7 @@ export default function TradeHistoryChart({ trades, symbol = "XRPUSDT" }: Props)
         position: isBuy ? "belowBar" : "aboveBar",
         color: isBuy ? "#22c55e" : "#ef4444",
         shape: isBuy ? "arrowUp" : "arrowDown",
-        text: isBuy
-          ? "BUY"
-          : t.pnl != null
-          ? `SELL ${t.pnl >= 0 ? "+" : ""}$${t.pnl.toFixed(1)}`
-          : "SELL",
+        text: isBuy ? "BUY" : "SELL",
         size: 1.5,
       } as SeriesMarker<Time>);
     }

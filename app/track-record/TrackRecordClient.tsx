@@ -165,20 +165,6 @@ export default function TrackRecordClient({
           ))}
         </div>
 
-        {/* Secondary stats */}
-        <div className="grid grid-cols-3 gap-4 mb-12">
-          {[
-            { value: `$${bestPnl.toFixed(2)}`,   label: "Best Trade", sub: bestDate },
-            { value: `$${avgWin.toFixed(2)}`,     label: "Avg Win",    sub: "Per winning trade" },
-            { value: `−$${avgLoss.toFixed(2)}`,   label: "Avg Loss",   sub: "Per losing trade" },
-          ].map((s) => (
-            <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-              <div className="text-xl font-bold text-white mb-1">{s.value}</div>
-              <div className="text-gray-400 text-xs font-medium mb-0.5">{s.label}</div>
-              <div className="text-gray-600 text-xs">{s.sub}</div>
-            </div>
-          ))}
-        </div>
 
         {/* Equity curve */}
         {displayTrades && (

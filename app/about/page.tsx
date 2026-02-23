@@ -44,9 +44,7 @@ export default function AboutPage() {
                   </p>
                   <p className="text-gray-400 leading-relaxed">
                     18+ months of live systematic trading across crypto perpetual futures and equity
-                    markets. Research in financial market microstructure, algorithmic execution quality,
-                    and Shariah-compliant derivatives currently under peer review at international
-                    finance journals.
+                    markets.
                   </p>
                 </div>
               </div>
