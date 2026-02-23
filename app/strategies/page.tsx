@@ -40,21 +40,21 @@ const strategies = [
   },
   {
     icon: <BarChart2 size={24} className="text-gold" />,
-    name: "Quant Equity Screener",
-    market: "Bangladesh DSE",
+    name: "DSE Multi-Bot Automated System",
+    market: "Bangladesh Equities",
     exchange: "Dhaka Stock Exchange",
-    type: "Factor Investing",
-    timeframe: "Weekly",
+    type: "Systematic Intraday",
+    timeframe: "Intraday",
     status: "Development",
     description:
-      "Multi-factor quantitative screener for DSE equities. Combines momentum, value, and quality factors to rank stocks. Designed as a systematic approach to an inefficient emerging market.",
+      "Fully automated intraday trading system for the Dhaka Stock Exchange running 25+ independent bots simultaneously. Integrates directly with live market data and executes through a licensed broker platform. The system operates autonomously within market hours — zero manual intervention required. Strategy selection is driven by a HPC-optimised backtesting engine validated across 400+ DSE-listed equities and 10+ years of historical data.",
     metrics: [
-      { label: "Universe", value: "DSE All" },
-      { label: "Factors", value: "3+" },
-      { label: "Rebalance", value: "Weekly" },
-      { label: "Approach", value: "Long Only" },
+      { label: "Concurrent Bots", value: "25+" },
+      { label: "Universe", value: "400+ stocks" },
+      { label: "Backtest", value: "10+ yrs" },
+      { label: "Operation", value: "Fully Auto" },
     ],
-    note: "In development. Not yet live.",
+    note: "In development. Live market data integration complete. Deployment pending final validation.",
   },
 ];
 
