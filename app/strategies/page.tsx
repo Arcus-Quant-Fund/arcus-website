@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, TrendingUp, Activity, BarChart2, Globe, Repeat2, Newspaper, Zap, Layers, Brain } from "lucide-react";
+import { ArrowRight, TrendingUp, Activity, BarChart2, Globe, Repeat2, Newspaper, Zap, Layers, Brain, Network } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
 // Revalidate every 60 seconds — matches sync script interval
@@ -120,6 +120,11 @@ const comingSoon = [
     name: "Regime Detection System",
     desc: "Classifies market state as trending, mean-reverting, or high-volatility using hidden Markov models. Routes order flow to the appropriate sub-strategy for the current regime.",
   },
+  {
+    icon: <Network size={20} className="text-gold" />,
+    name: "Full Economic Simulation System",
+    desc: "Ingests real-time macroeconomic data — commodity flows, trade policy shifts, geopolitical events, supply chain indicators — to build a live model of the global economy. Identifies structural dislocations before they are priced into markets and informs macro-driven position sizing across asset classes.",
+  },
 ];
 
 const platforms = [
@@ -227,6 +232,17 @@ const platforms = [
                 <p className="text-gray-500 text-xs leading-relaxed">{s.desc}</p>
               </div>
             ))}
+          </div>
+
+          {/* Ad-hoc research note */}
+          <div className="mt-6 bg-gray-900/40 border border-gray-800 rounded-xl p-5">
+            <p className="text-gray-400 text-sm leading-relaxed">
+              <span className="text-white font-semibold">Beyond the bots.</span>{" "}
+              Alongside our systematic strategies, we run continuous ad-hoc research — cross-asset
+              correlation studies, macro-driven scenario models, geopolitical supply-demand theses,
+              and probability-weighted opportunity assessments. This research informs when and how
+              we deploy capital, and feeds the development pipeline above.
+            </p>
           </div>
         </div>
 
