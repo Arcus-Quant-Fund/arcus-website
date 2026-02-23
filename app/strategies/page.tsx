@@ -125,6 +125,11 @@ const comingSoon = [
     name: "Full Economic Simulation System",
     desc: "Ingests real-time macroeconomic data — commodity flows, trade policy shifts, geopolitical events, supply chain indicators — to build a live model of the global economy. Identifies structural dislocations before they are priced into markets and informs macro-driven position sizing across asset classes.",
   },
+  {
+    icon: <Layers size={20} className="text-gold" />,
+    name: "DeFi Protocol Economics Simulation",
+    desc: "Models the token economics, liquidity dynamics, and incentive structures of DeFi protocols in real time. Simulates yield flows, liquidity pool behaviour, governance shifts, and TVL movements to identify mispriced risk and arbitrage opportunities across decentralised finance.",
+  },
 ];
 
 const platforms = [
