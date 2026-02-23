@@ -1,7 +1,35 @@
 import Link from "next/link";
 import { ArrowRight, TrendingUp, Activity, BarChart2, Globe } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
 
-const strategies = [
+// Revalidate every 60 seconds — matches sync script interval
+export const revalidate = 60;
+
+async function getDCVWAPStats() {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
+  );
+  const { data } = await supabase
+    .from("performance_stats")
+    .select("sharpe_ratio, profit_factor, win_rate, total_trades, period_start")
+    .eq("client_id", "eth")
+    .single();
+  return data;
+}
+
+export default async function StrategiesPage() {
+  const liveStats = await getDCVWAPStats();
+
+  const sharpe      = liveStats?.sharpe_ratio  ?? 2.44;
+  const pf          = liveStats?.profit_factor ?? 2.21;
+  const winRate     = liveStats?.win_rate      ?? 54.2;
+  const totalTrades = liveStats?.total_trades  ?? 24;
+  const liveSince   = liveStats?.period_start
+    ? new Date(liveStats.period_start + "-01").toLocaleDateString("en-US", { month: "short", year: "numeric" })
+    : "Sep 2025";
+
+  const strategies = [
   {
     icon: <TrendingUp size={24} className="text-gold" />,
     name: "DC-VWAP Trend Follower",
@@ -13,12 +41,12 @@ const strategies = [
     description:
       "Directional Change (DC) algorithm combined with VWAP and EMA filters. Captures momentum moves in high-liquidity crypto pairs across 24/7 markets. Designed to cut losers fast and let winners run — low win rate, high profit factor. Runs continuously on cloud infrastructure with no human intervention.",
     metrics: [
-      { label: "Sharpe Ratio", value: "2.44" },
-      { label: "Profit Factor", value: "2.21" },
-      { label: "Win Rate", value: "54.2%" },
-      { label: "Live Since", value: "Sep 2025" },
+      { label: "Sharpe Ratio", value: sharpe.toFixed(2) },
+      { label: "Profit Factor", value: pf.toFixed(2) },
+      { label: "Win Rate", value: `${winRate.toFixed(1)}%` },
+      { label: "Live Since", value: liveSince },
     ],
-    note: "24 closed trades · XRP/USDT perpetuals · 3.5× isolated margin · Binance. Full trade log on Track Record page.",
+    note: `${totalTrades} closed trades · XRP/USDT perpetuals · 3.5× isolated margin · Binance. Full trade log on Track Record page.`,
   },
   {
     icon: <Activity size={24} className="text-gold" />,
@@ -74,7 +102,6 @@ const platforms = [
   { name: "MT4 / MT5", type: "Forex & CFDs", supports: ["Forex", "Commodities", "Indices"] },
 ];
 
-export default function StrategiesPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] pt-24 px-6">
       <div className="max-w-4xl mx-auto">

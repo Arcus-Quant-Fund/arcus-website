@@ -59,7 +59,7 @@ export default function AboutPage() {
                   RB
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-1">Dr. Rafiq Bhuyan</h2>
+                  <h2 className="text-2xl font-bold text-white mb-1">Dr. Rafiqul Bhuyan</h2>
                   <p className="text-gold text-sm font-medium mb-4">Co-Founder & Strategic Advisor · Academic Finance</p>
                   <p className="text-gray-400 leading-relaxed mb-4">
                     Associate Professor of Finance & Economics at A&M University Alabama and Adjunct Professor
@@ -82,15 +82,16 @@ export default function AboutPage() {
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
               <div className="flex items-start gap-6">
                 <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-2xl font-bold text-gold">
-                  JU
+                  JIB
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-white mb-1">Jahidul</h2>
-                  <p className="text-gold text-sm font-medium mb-4">Operations</p>
+                  <h2 className="text-2xl font-bold text-white mb-1">Md. Jahidul Islam Bhuiya</h2>
+                  <p className="text-gold text-sm font-medium mb-4">Software Engineer</p>
                   <p className="text-gray-400 leading-relaxed">
-                    Supports day-to-day fund operations, client communications, and administrative
-                    processes. Ensures the operational layer runs smoothly so the research and
-                    execution systems can focus on what they do best.
+                    Software engineer responsible for the technical infrastructure supporting
+                    Arcus operations — system development, tooling, and engineering execution.
+                    Ensures the technology layer runs reliably so research and trading systems
+                    can operate without interruption.
                   </p>
                 </div>
               </div>
