@@ -408,7 +408,7 @@ export default function TrackRecordClient({
               {
                 period: "Jan 2025 – Oct 2025",
                 label: "XRP Spot Bot",
-                desc: "149 closed trades on XRP/USDT spot (no leverage). Win rate 43%, profit factor 1.57, avg win +4.32%, avg loss −2.08%. Total P&L: +208 USDT. Validated the DC-VWAP signal across 10 months.",
+                desc: "149 closed trades on XRP/USDT spot (no leverage). Win rate 43%, profit factor 1.57, avg win +4.32%, avg loss −2.08%. Compounded positively across 10 months through bull, bear, and sideways conditions — validating the DC-VWAP edge before scaling to leveraged perpetuals.",
                 badge: "Completed",
                 badgeColor: "blue",
               },
