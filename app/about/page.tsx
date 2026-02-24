@@ -146,6 +146,15 @@ export default function AboutPage() {
               Currently in active growth phase with live capital deployed across client accounts.
               Targeting registration in Dubai and the United States to support global operations.
             </p>
+            <p>
+              Alongside the fund, we are building <strong className="text-white">Baraka</strong> — a
+              Shariah-compliant perpetual futures DeFi protocol with zero interest hardcoded by design.
+              Built on peer-reviewed mathematical research, Baraka targets the 1.8 billion Muslims and
+              $3 trillion Islamic finance industry that today has no access to perpetual futures markets.{" "}
+              <Link href="/dapp" className="text-gold hover:text-gold-dark transition-colors">
+                Learn more →
+              </Link>
+            </p>
           </div>
         </div>
 

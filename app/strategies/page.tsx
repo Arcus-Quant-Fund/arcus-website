@@ -214,6 +214,55 @@ const platforms = [
           ))}
         </div>
 
+        {/* Baraka Protocol */}
+        <div className="mb-16">
+          <div className="flex items-center gap-3 mb-6">
+            <h2 className="text-white font-bold text-xl">Protocol Venture</h2>
+          </div>
+          <Link href="/dapp" className="block group">
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 hover:border-gold/30 transition-colors">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center text-lg font-bold text-gold">
+                    ب
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold text-lg">Baraka</h3>
+                    <p className="text-gray-500 text-sm">DeFi Protocol · Arbitrum → Cosmos SDK</p>
+                  </div>
+                </div>
+                <span className="px-3 py-1 rounded-full border text-xs font-medium bg-amber-500/10 text-amber-400 border-amber-500/20">
+                  In Development
+                </span>
+              </div>
+              <p className="text-gray-400 leading-relaxed mb-6">
+                The world&apos;s first Shariah-compliant perpetual futures protocol. Premium-only funding
+                formula (F = P, ι = 0) hardcoded on-chain — eliminating riba by design. Built on the
+                mathematical proof by Ackerer, Hugonnier & Jermann (2024) and the Islamic finance
+                taxonomy from our own research paper (Ahmed, Bhuyan & Islam, 2026). Targets 1.8 billion
+                Muslims and a $3 trillion Islamic finance industry currently excluded from perpetual
+                futures markets.
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                {[
+                  { label: "Interest Rate", value: "ι = 0" },
+                  { label: "Max Leverage", value: "5×" },
+                  { label: "Market Size", value: "$3T+" },
+                  { label: "Competing Protocols", value: "0" },
+                ].map((m) => (
+                  <div key={m.label} className="bg-gray-800/60 rounded-lg p-3 text-center">
+                    <div className="text-white font-bold text-sm mb-0.5">{m.value}</div>
+                    <div className="text-gray-500 text-xs">{m.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-1 text-gold text-sm font-medium group-hover:gap-2 transition-all">
+                View full protocol <ArrowRight size={14} />
+              </div>
+            </div>
+          </Link>
+        </div>
+
         {/* Coming Soon */}
         <div className="mb-16">
           <div className="flex items-center gap-3 mb-2">

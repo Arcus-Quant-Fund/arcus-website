@@ -11,6 +11,7 @@ const links = [
   { href: "/how-it-works", label: "How It Works" },
   { href: "/strategies", label: "Strategies" },
   { href: "/track-record", label: "Track Record" },
+  { href: "/dapp", label: "Baraka" },
   { href: "/contact", label: "Contact" },
 ];
 
