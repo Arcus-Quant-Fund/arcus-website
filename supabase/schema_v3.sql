@@ -130,6 +130,60 @@ alter table public.clients
 
 
 -- ============================================================
+-- CAPITAL EVENTS
+-- Every deposit or withdrawal a client makes. This is the
+-- source of truth for calculating TRUE trading profit:
+--
+--   true_profit = (closing_balance - opening_balance) - net_new_capital
+--   net_new_capital = sum(deposits) - sum(withdrawals)
+--
+-- Without this, a mid-month deposit would look like profit
+-- and a mid-month withdrawal would look like a loss.
+-- ============================================================
+create table if not exists public.capital_events (
+  id             bigserial primary key,
+  client_id      uuid not null references public.clients(id) on delete cascade,
+  event_type     text not null check (event_type in ('DEPOSIT', 'WITHDRAWAL')),
+  amount         float8 not null check (amount > 0),  -- always positive; sign from event_type
+  balance_before float8,          -- account balance before this event (USDT)
+  balance_after  float8,          -- account balance after this event (USDT)
+  notes          text,            -- e.g. "Initial capital", "Partial withdrawal", "Top-up"
+  occurred_at    timestamptz not null default now(),   -- when the transfer actually happened
+  recorded_at    timestamptz default now(),            -- when it was entered into the system
+  recorded_by    text default 'admin'
+);
+
+create index if not exists idx_capital_events_client on public.capital_events(client_id, occurred_at desc);
+
+alter table public.capital_events enable row level security;
+create policy "capital_service" on public.capital_events
+  using (true) with check (true);
+-- Clients can see their own capital events
+create policy "capital_client_select" on public.capital_events
+  for select using (auth.uid() = client_id);
+
+
+-- ============================================================
+-- ALTER MONTHLY SNAPSHOTS
+-- Add capital-flow columns and fee payment tracking.
+-- ============================================================
+alter table public.monthly_snapshots
+  add column if not exists total_deposits   float8 default 0,   -- capital added this month
+  add column if not exists total_withdrawals float8 default 0,  -- capital removed this month
+  add column if not exists net_new_capital  float8 default 0,   -- deposits - withdrawals
+  add column if not exists fee_paid         float8 default 0,   -- performance fee actually received
+  add column if not exists fee_paid_at      timestamptz,
+  add column if not exists fee_payment_ref  text;               -- Binance tx / bank ref
+
+
+-- ============================================================
+-- HELPER: Record a deposit manually
+-- replace 'CLIENT_UUID' with the client's Supabase auth UUID
+-- ============================================================
+-- insert into public.capital_events (client_id, event_type, amount, notes, occurred_at)
+-- values ('CLIENT_UUID', 'DEPOSIT', 3000.00, 'Initial capital transfer', now());
+
+-- ============================================================
 -- HELPER: Seed exchange rate manually (for testing)
 -- ============================================================
 -- insert into public.exchange_rates (asset, fiat, lower_bound, upper_bound, mid_rate, ad_count)
