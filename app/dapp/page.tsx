@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Shield, Lock, TrendingUp, BookOpen } from "lucide-react";
+import { ArrowRight, Shield, Lock, TrendingUp, BookOpen, Activity, FlaskConical, ExternalLink } from "lucide-react";
 
 export default function DAppPage() {
   return (
@@ -9,8 +9,9 @@ export default function DAppPage() {
         {/* Hero */}
         <div className="mb-16">
           <div className="flex items-center gap-3 mb-6 flex-wrap">
-            <span className="px-3 py-1 rounded-full border text-xs font-medium bg-amber-500/10 text-amber-400 border-amber-500/20">
-              In Development
+            <span className="px-3 py-1 rounded-full border text-xs font-medium bg-green-500/10 text-green-400 border-green-500/20 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              Testnet Live — Arbitrum Sepolia
             </span>
             <span className="px-3 py-1 rounded-full border text-xs font-medium bg-blue-500/10 text-blue-400 border-blue-500/20">
               DeFi Protocol
@@ -236,13 +237,14 @@ export default function DAppPage() {
             {[
               {
                 phase: "01",
-                timeline: "Months 1–4",
+                timeline: "Complete ✓",
                 label: "Foundation",
+                done: true,
                 items: [
-                  "Smart contracts on Arbitrum (FundingEngine, ShariahGuard, PositionManager)",
-                  "Oracle integration: Chainlink + Pyth for gold, ETH",
-                  "Internal security audit and whitepaper",
-                  "Approach AAOIFI-certified scholars for preliminary review",
+                  "8 smart contracts deployed + verified on Arbitrum Sepolia",
+                  "60/60 tests passing (unit + integration + fuzz)",
+                  "Economic simulation: cadCAD + RL + game theory + mechanism design",
+                  "Research paper: Ahmed, Bhuyan & Islam (2026) — ι=0 proof",
                 ],
               },
               {
@@ -283,10 +285,13 @@ export default function DAppPage() {
                   <div className="text-gray-600 text-xs">{r.timeline}</div>
                 </div>
                 <div className="relative pl-5 border-l border-gray-800 pb-4 last:pb-0">
-                  <div className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-amber-400/30 border border-amber-500/40" />
+                  <div className={`absolute -left-1.5 top-1.5 w-3 h-3 rounded-full ${(r as {done?:boolean}).done ? "bg-green-400/60 border border-green-400" : "bg-amber-400/30 border border-amber-500/40"}`} />
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-gray-600 text-xs font-mono">{r.phase}</span>
                     <span className="text-white font-semibold text-sm">{r.label}</span>
+                    {(r as {done?:boolean}).done && (
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20">Live</span>
+                    )}
                   </div>
                   <ul className="space-y-1.5">
                     {r.items.map((item) => (
@@ -338,6 +343,153 @@ export default function DAppPage() {
               <div className="text-gray-500 text-xs">{s.sub}</div>
             </div>
           ))}
+        </div>
+
+        {/* Live Contracts */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-8 h-8 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+              <Activity size={16} className="text-green-400" />
+            </div>
+            <div>
+              <h2 className="text-white font-bold text-xl">Live on Arbitrum Sepolia</h2>
+              <p className="text-gray-500 text-xs">Deployed 25 Feb 2026 · All 8 contracts verified on Arbiscan</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-5">
+            {[
+              { name: "OracleAdapter",     addr: "0xB8d9778288B96ee5a9d873F222923C0671fc38D4" },
+              { name: "ShariahGuard",      addr: "0x26d4db76a95DBf945ac14127a23Cd4861DA42e69" },
+              { name: "FundingEngine",     addr: "0x459BE882BC8736e92AA4589D1b143e775b114b38" },
+              { name: "InsuranceFund",     addr: "0x7B440af63D5fa5592E53310ce914A21513C1a716" },
+              { name: "CollateralVault",   addr: "0x5530e4670523cFd1A60dEFbB123f51ae6cae0c5E" },
+              { name: "LiquidationEngine", addr: "0x456eBE7BbCb099E75986307E4105A652c108b608" },
+              { name: "PositionManager",   addr: "0x53E3063FE2194c2DAe30C36420A01A8573B150bC" },
+              { name: "GovernanceModule",  addr: "0x8c987818dffcD00c000Fe161BFbbD414B0529341" },
+            ].map((c) => (
+              <a
+                key={c.name}
+                href={`https://sepolia.arbiscan.io/address/${c.addr}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between bg-gray-800/60 border border-gray-700/50 rounded-lg px-4 py-2.5 hover:border-green-500/30 hover:bg-gray-800 transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                  <span className="text-white text-xs font-mono font-medium">{c.name}.sol</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600 text-xs font-mono hidden md:block">
+                    {c.addr.slice(0, 6)}...{c.addr.slice(-4)}
+                  </span>
+                  <ExternalLink size={11} className="text-gray-600 group-hover:text-green-400 transition-colors" />
+                </div>
+              </a>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400" /> Chain: Arbitrum Sepolia (421614)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400" /> Compiler: Solidity 0.8.24
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400" /> Deploy cost: ~$0.01 (L2)
+            </span>
+          </div>
+        </div>
+
+        {/* Simulation & Economic Verification */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <FlaskConical size={20} className="text-purple-400" />
+            </div>
+            <div>
+              <h2 className="text-white font-bold text-xl mb-1">Economic Simulation Framework</h2>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Before deploying a single contract, we built a full economic simulation system to verify
+                protocol safety across thousands of price scenarios. No changes can be made post-deploy —
+                so we tested everything first.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {[
+              {
+                title: "cadCAD Monte Carlo",
+                badge: "System Dynamics",
+                badgeColor: "purple",
+                result: "0% insolvency · 20 runs × 720 steps",
+                desc: "Full state machine simulation of the protocol over 30 days. Every funding payment, liquidation, and collateral move tracked across 20 parallel Monte Carlo runs.",
+              },
+              {
+                title: "Game Theory",
+                badge: "Nash Equilibrium",
+                badgeColor: "blue",
+                result: "ι=0 net transfer < 1% of total",
+                desc: "Proves ι=0 is the unique Shariah-compliant Nash Equilibrium. With any ι > 0, longs face a systematic positive transfer to the protocol — textbook riba. With ι=0, net transfer ≈ zero.",
+              },
+              {
+                title: "Reinforcement Learning",
+                badge: "Agent Modelling",
+                badgeColor: "amber",
+                result: "PPO agent · 5× leverage optimal",
+                desc: "A Proximal Policy Optimisation agent learns to trade within Baraka's constraints. Trained agents converge to lower leverage during high-funding periods — consistent with rational carry-trade theory.",
+              },
+              {
+                title: "Stress Tests",
+                badge: "5 Scenarios",
+                badgeColor: "red",
+                result: "Protocol survives all scenarios",
+                desc: "Flash crash (−40%), 48h max funding spiral, oracle attack (+20% mark), 60-day bear market, cascade liquidation. Insurance fund survives all. ι=0 never violated in any scenario.",
+              },
+            ].map((s) => (
+              <div key={s.title} className="bg-gray-800/60 border border-gray-700/50 rounded-xl p-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-white font-semibold text-sm">{s.title}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded border ${
+                    s.badgeColor === "purple" ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                    : s.badgeColor === "blue"   ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                    : s.badgeColor === "amber"  ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                    : "bg-red-500/10 text-red-400 border-red-500/20"
+                  }`}>
+                    {s.badge}
+                  </span>
+                </div>
+                <div className="text-green-400 text-xs font-mono mb-2">{s.result}</div>
+                <p className="text-gray-400 text-xs leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-gray-800/40 border border-gray-700/30 rounded-xl p-4">
+            <div className="text-gray-500 text-xs mb-3 font-medium uppercase tracking-wide">Mechanism Design — Parameter Optimisation</div>
+            <p className="text-gray-400 text-sm leading-relaxed mb-3">
+              Using <code className="text-gray-300 bg-gray-800 px-1 py-0.5 rounded text-xs">scipy.optimize.differential_evolution</code>,
+              we searched the full parameter space for Pareto-optimal protocol settings.
+              Result: Baraka&apos;s current parameters (±75bps cap, 2% maintenance margin, 1% liquidation penalty, 50% insurance split)
+              sit inside the Pareto-optimal region for solvency + fairness.
+            </p>
+            <div className="flex flex-wrap gap-4 text-xs">
+              {[
+                { param: "Max funding rate", value: "±75 bps/hr", status: "optimal" },
+                { param: "Maintenance margin", value: "2%", status: "optimal" },
+                { param: "Liquidation penalty", value: "1%", status: "optimal" },
+                { param: "Insurance split", value: "50 / 50", status: "optimal" },
+                { param: "Max leverage", value: "5× (fixed)", status: "shariah" },
+                { param: "Interest (ι)", value: "0 (fixed)", status: "shariah" },
+              ].map((p) => (
+                <div key={p.param} className="flex items-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${p.status === "shariah" ? "bg-gold" : "bg-green-400"}`} />
+                  <span className="text-gray-500">{p.param}:</span>
+                  <span className="text-white font-mono">{p.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* CTA */}
