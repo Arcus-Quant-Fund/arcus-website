@@ -25,9 +25,18 @@ export default async function StrategiesPage() {
   const pf          = liveStats?.profit_factor ?? 2.21;
   const winRate     = liveStats?.win_rate      ?? 54.2;
   const totalTrades = liveStats?.total_trades  ?? 24;
-  const liveSince   = liveStats?.period_start
-    ? new Date(liveStats.period_start + "-01").toLocaleDateString("en-US", { month: "short", year: "numeric" })
-    : "Sep 2025";
+  const liveSince = (() => {
+    const raw = liveStats?.period_start;
+    if (!raw) return "Sep 2025";
+    try {
+      // Support YYYY-MM or YYYY-MM-DD or full ISO
+      const dateStr = raw.length === 7 ? `${raw}-01` : raw.substring(0, 10);
+      const d = new Date(`${dateStr}T00:00:00`);
+      return isNaN(d.getTime()) ? "Sep 2025" : d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    } catch {
+      return "Sep 2025";
+    }
+  })();
 
   const strategies = [
   {
