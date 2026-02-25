@@ -136,15 +136,18 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
-    // Read current bot state
+    // Read current bot state — prefer total_equity (free margin + position equity + unrealized PnL)
     const { data: botState } = await supabase
       .from("bot_state")
-      .select("client_id, current_amount, position, symbol, leverage, updated_at")
+      .select("client_id, current_amount, total_equity, position, symbol, leverage, updated_at")
       .eq("client_id", client.bot_id)
       .single();
 
     const state = botState as BotState | null;
-    const currentBalance = state?.current_amount ?? null;
+    // Use total_equity when available (set by supabase_sync); fall back to current_amount
+    const currentBalance = (state as { total_equity?: number } | null)?.total_equity
+      ?? state?.current_amount
+      ?? null;
 
     if (currentBalance === null) {
       results.clients_skipped++;
@@ -163,7 +166,7 @@ export async function GET(req: NextRequest) {
 
     const balanceBefore = (lastBalance as { balance: number } | null)?.balance ?? null;
 
-    // Insert balance snapshot
+    // Insert balance snapshot (total equity = true account value)
     const { error: balErr } = await supabase
       .from("balance_history")
       .insert({
