@@ -4,18 +4,17 @@ import { createServiceClient } from "@/lib/supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ARCUS_EMAIL_FROM  = "Arcus Quant Fund <admin@arcusquantfund.com>";
-const ARCUS_EMAIL_CC    = "shehzadahmed@arcusquantfund.com";
-const ARCUS_SITE        = "https://arcusquantfund.com";
+const ARCUS_EMAIL_FROM = "Arcus Quant Fund <admin@arcusquantfund.com>";
+const ARCUS_EMAIL_CC   = "shehzadahmed@arcusquantfund.com";
+const ARCUS_SITE       = "https://arcusquantfund.com";
 
-// Shehzad's payment details for performance fee collection
-const PAYMENT_BINANCE_UID    = "131952271";
-const PAYMENT_BINANCE_USER   = "User-b138c";
-const PAYMENT_BANK_NAME      = "United Commercial Bank PLC";
-const PAYMENT_BANK_HOLDER    = "Shehzad Ahmed";
-const PAYMENT_BANK_ACCOUNT   = "050 3201 0000 99748";
-const PAYMENT_BANK_ROUTING   = "245263286";
-const PAYMENT_BANK_BRANCH    = "Mohammadpur Branch (050)";
+const PAYMENT_BINANCE_UID  = "131952271";
+const PAYMENT_BINANCE_USER = "User-b138c";
+const PAYMENT_BANK_HOLDER  = "Shehzad Ahmed";
+const PAYMENT_BANK_NAME    = "United Commercial Bank PLC";
+const PAYMENT_BANK_ACCOUNT = "050 3201 0000 99748";
+const PAYMENT_BANK_ROUTING = "245263286";
+const PAYMENT_BANK_BRANCH  = "Mohammadpur Branch (050)";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,9 +41,13 @@ type Trade = {
   reason: string | null;
 };
 
-type BalancePoint = {
-  balance: number;
-  recorded_at: string;
+type BalancePoint = { balance: number; recorded_at: string };
+
+type CapitalEvent = {
+  event_type: "DEPOSIT" | "WITHDRAWAL";
+  amount: number;
+  notes: string | null;
+  occurred_at: string;
 };
 
 type ExchangeRate = {
@@ -55,11 +58,20 @@ type ExchangeRate = {
 };
 
 type MonthStats = {
-  gross_pnl: number;
-  net_pnl: number;
+  // Balances
+  opening_balance: number;
+  closing_balance: number;
+  // Capital flows
+  total_deposits: number;
+  total_withdrawals: number;
+  net_new_capital: number;
+  // P&L — capital-adjusted
+  gross_pnl: number;         // (closing - opening) - net_new_capital
   carried_loss_in: number;
-  performance_fee: number;
-  carried_loss_out: number;
+  net_pnl: number;           // gross_pnl - carried_loss_in
+  performance_fee: number;   // net_pnl * profit_share_pct (only if net_pnl > 0)
+  carried_loss_out: number;  // |net_pnl| if net_pnl < 0, else 0
+  // Trade stats
   total_trades: number;
   winning_trades: number;
   losing_trades: number;
@@ -69,39 +81,34 @@ type MonthStats = {
   worst_trade_pnl: number;
   avg_win: number;
   avg_loss: number;
-  opening_balance: number;
-  closing_balance: number;
 };
 
-// ─── Authorization ────────────────────────────────────────────────────────────
+// ─── Auth ─────────────────────────────────────────────────────────────────────
 
 function isAuthorized(req: NextRequest): boolean {
-  const isCronRequest = req.headers.get("x-vercel-cron-job-name") !== null;
-  const isManual =
-    req.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}`;
-  return isCronRequest || isManual;
+  const isCron   = req.headers.get("x-vercel-cron-job-name") !== null;
+  const isManual = req.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}`;
+  return isCron || isManual;
 }
 
-// ─── Date Helpers ─────────────────────────────────────────────────────────────
+// ─── Date helpers ─────────────────────────────────────────────────────────────
 
-function getPreviousMonth(): { year: number; month: number; label: string; startISO: string; endISO: string } {
-  const now = new Date();
+function getPreviousMonth() {
+  const now   = new Date();
   const year  = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-  const month = now.getMonth() === 0 ? 12 : now.getMonth(); // 1-indexed
+  const month = now.getMonth() === 0 ? 12 : now.getMonth();
   const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
-  const end   = new Date(year, month,     0, 23, 59, 59, 999); // last day of month
-  const label = start.toLocaleString("en-US", { month: "long", year: "numeric" });
+  const end   = new Date(year, month, 0, 23, 59, 59, 999);
   return {
-    year, month, label,
+    year, month,
+    label:    start.toLocaleString("en-US", { month: "long", year: "numeric" }),
     startISO: start.toISOString(),
     endISO:   end.toISOString(),
   };
 }
 
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short", day: "numeric", year: "numeric",
-  });
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function fmtMoney(val: number | null | undefined, prefix = "$"): string {
@@ -109,9 +116,9 @@ function fmtMoney(val: number | null | undefined, prefix = "$"): string {
   return `${prefix}${Math.abs(val).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function fmtMoneyFull(val: number | null | undefined, prefix = "$"): string {
+function fmtSigned(val: number | null | undefined, prefix = "$"): string {
   if (val == null) return "N/A";
-  const sign = val >= 0 ? "+" : "-";
+  const sign = val >= 0 ? "+" : "−";
   return `${sign}${prefix}${Math.abs(val).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
@@ -120,322 +127,293 @@ function fmtFiat(val: number | null | undefined, fiat: string): string {
   return `${val.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ${fiat}`;
 }
 
-// ─── Stats Calculator ─────────────────────────────────────────────────────────
+// ─── Stats calculator (capital-adjusted) ─────────────────────────────────────
+//
+// TRUE TRADING PROFIT formula (Modified Dietz simplified):
+//
+//   gross_pnl = (closing_balance - opening_balance) - net_new_capital
+//
+// This strips out deposits and withdrawals so only bot-generated
+// profit/loss remains.
+//
+// Example:
+//   Opening: $1,000  Deposit: +$500  Closing: $1,600
+//   gross_pnl = ($1,600 - $1,000) - $500 = $100  ✓ (only bot made $100)
+//   Without tracking: would show $600 profit (includes $500 deposit) ✗
 
 function computeStats(
   trades: Trade[],
   balances: BalancePoint[],
+  capitalEvents: CapitalEvent[],
   carriedLossIn: number,
   profitSharePct: number
 ): MonthStats {
-  const closedTrades = trades.filter((t) => t.side?.toUpperCase() === "SELL" && t.pnl != null);
-  const wins   = closedTrades.filter((t) => (t.pnl ?? 0) > 0);
-  const losses = closedTrades.filter((t) => (t.pnl ?? 0) < 0);
-
-  const gross_pnl     = closedTrades.reduce((s, t) => s + (t.pnl ?? 0), 0);
-  const gross_wins    = wins.reduce((s, t) => s + (t.pnl ?? 0), 0);
-  const gross_losses  = Math.abs(losses.reduce((s, t) => s + (t.pnl ?? 0), 0));
-  const profit_factor = gross_losses > 0 ? gross_wins / gross_losses : gross_wins > 0 ? 999 : 0;
-
-  // Net P&L after deducting any carried loss from prior months
-  const net_pnl        = gross_pnl - carriedLossIn;
-  const performance_fee = net_pnl > 0 ? net_pnl * profitSharePct : 0;
-  const carried_loss_out = net_pnl < 0 ? Math.abs(net_pnl) : 0;
-
   const sorted = [...balances].sort(
     (a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
   );
   const opening_balance = sorted[0]?.balance ?? 0;
   const closing_balance = sorted[sorted.length - 1]?.balance ?? 0;
 
-  const pnls = closedTrades.map((t) => t.pnl ?? 0);
-  const best_trade_pnl  = pnls.length > 0 ? Math.max(...pnls) : 0;
-  const worst_trade_pnl = pnls.length > 0 ? Math.min(...pnls) : 0;
-  const avg_win         = wins.length > 0 ? gross_wins / wins.length : 0;
-  const avg_loss        = losses.length > 0 ? gross_losses / losses.length : 0;
+  // Capital flows this month
+  const total_deposits    = capitalEvents.filter(e => e.event_type === "DEPOSIT").reduce((s, e) => s + e.amount, 0);
+  const total_withdrawals = capitalEvents.filter(e => e.event_type === "WITHDRAWAL").reduce((s, e) => s + e.amount, 0);
+  const net_new_capital   = total_deposits - total_withdrawals;
+
+  // Capital-adjusted P&L
+  const gross_pnl = (closing_balance - opening_balance) - net_new_capital;
+
+  // Performance fee calculation (after deducting any carried loss)
+  const net_pnl         = gross_pnl - carriedLossIn;
+  const performance_fee = net_pnl > 0 ? net_pnl * profitSharePct : 0;
+  const carried_loss_out = net_pnl < 0 ? Math.abs(net_pnl) : 0;
+
+  // Trade stats (only closed trades = SELL side with pnl)
+  const closed = trades.filter(t => t.side?.toUpperCase() === "SELL" && t.pnl != null);
+  const wins   = closed.filter(t => (t.pnl ?? 0) > 0);
+  const losses = closed.filter(t => (t.pnl ?? 0) < 0);
+
+  const grossWins   = wins.reduce((s, t) => s + (t.pnl ?? 0), 0);
+  const grossLosses = Math.abs(losses.reduce((s, t) => s + (t.pnl ?? 0), 0));
+  const pnls        = closed.map(t => t.pnl ?? 0);
 
   return {
-    gross_pnl,
-    net_pnl,
-    carried_loss_in: carriedLossIn,
-    performance_fee,
-    carried_loss_out,
-    total_trades: closedTrades.length,
+    opening_balance, closing_balance,
+    total_deposits, total_withdrawals, net_new_capital,
+    gross_pnl, carried_loss_in: carriedLossIn, net_pnl, performance_fee, carried_loss_out,
+    total_trades:   closed.length,
     winning_trades: wins.length,
-    losing_trades: losses.length,
-    win_rate: closedTrades.length > 0 ? (wins.length / closedTrades.length) * 100 : 0,
-    profit_factor,
-    best_trade_pnl,
-    worst_trade_pnl,
-    avg_win,
-    avg_loss,
-    opening_balance,
-    closing_balance,
+    losing_trades:  losses.length,
+    win_rate:       closed.length > 0 ? (wins.length / closed.length) * 100 : 0,
+    profit_factor:  grossLosses > 0 ? grossWins / grossLosses : grossWins > 0 ? 999 : 0,
+    best_trade_pnl:  pnls.length > 0 ? Math.max(...pnls) : 0,
+    worst_trade_pnl: pnls.length > 0 ? Math.min(...pnls) : 0,
+    avg_win:         wins.length > 0 ? grossWins / wins.length : 0,
+    avg_loss:        losses.length > 0 ? grossLosses / losses.length : 0,
   };
 }
 
-// ─── Email HTML Generator ─────────────────────────────────────────────────────
+// ─── Email builder ────────────────────────────────────────────────────────────
 
-function buildEmailHtml(
+function buildEmail(
   client: Client,
   stats: MonthStats,
   trades: Trade[],
+  capitalEvents: CapitalEvent[],
   rate: ExchangeRate | null,
   monthLabel: string
 ): string {
-  const isProfitable = stats.net_pnl > 0;
-  const gold   = "#f8ac07";
-  const green  = "#22c55e";
-  const red    = "#ef4444";
-  const pnlColor = (val: number) => (val >= 0 ? green : red);
+  const gold  = "#f8ac07";
+  const green = "#22c55e";
+  const red   = "#ef4444";
+  const blue  = "#60a5fa";
+  const pnlColor = (v: number) => v >= 0 ? green : red;
 
-  // BDT equivalent of closing balance
-  const closingFiatLower = rate ? stats.closing_balance * rate.lower_bound : null;
-  const closingFiatUpper = rate ? stats.closing_balance * rate.upper_bound : null;
-  const feeInFiatLower   = rate ? stats.performance_fee * rate.lower_bound : null;
-  const feeInFiatUpper   = rate ? stats.performance_fee * rate.upper_bound : null;
+  const closingFiatLow  = rate ? stats.closing_balance * rate.lower_bound : null;
+  const closingFiatHigh = rate ? stats.closing_balance * rate.upper_bound : null;
+  const feeInFiatLow    = rate ? stats.performance_fee * rate.lower_bound : null;
+  const feeInFiatHigh   = rate ? stats.performance_fee * rate.upper_bound : null;
 
-  // Transaction rows
-  const sortedTrades = [...trades].sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-  );
-  const tradeRows = sortedTrades.map((t, i) => {
+  const roi = stats.opening_balance > 0
+    ? (stats.gross_pnl / stats.opening_balance) * 100
+    : null;
+
+  // ── Capital events rows ──
+  const capitalRows = capitalEvents.length > 0 ? capitalEvents.map(e => {
+    const isDeposit = e.event_type === "DEPOSIT";
+    return `
+    <tr style="border-bottom:1px solid #1f2937;">
+      <td style="padding:9px 10px;color:#9ca3af;font-size:12px;">${fmtDate(e.occurred_at)}</td>
+      <td style="padding:9px 10px;font-weight:700;font-size:12px;color:${isDeposit ? green : red};">
+        ${e.event_type}
+      </td>
+      <td style="padding:9px 10px;font-weight:700;font-size:13px;color:${isDeposit ? green : red};text-align:right;">
+        ${isDeposit ? "+" : "−"}${fmtMoney(e.amount)}
+      </td>
+      <td style="padding:9px 10px;color:#6b7280;font-size:12px;">${e.notes ?? "—"}</td>
+    </tr>`;
+  }).join("") : `<tr><td colspan="4" style="padding:14px 10px;color:#4b5563;font-size:12px;">No capital movements this month.</td></tr>`;
+
+  // ── Trade rows ──
+  const sorted = [...trades].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  const tradeRows = sorted.length > 0 ? sorted.map((t, i) => {
     const isBuy  = t.side?.toUpperCase() === "BUY";
     const hasPnl = t.pnl != null && t.side?.toUpperCase() === "SELL";
     return `
     <tr style="border-bottom:1px solid #1f2937;">
-      <td style="padding:10px 8px;color:#9ca3af;font-size:12px;">${i + 1}</td>
-      <td style="padding:10px 8px;color:#d1d5db;font-size:12px;">${fmtDate(t.timestamp)}</td>
-      <td style="padding:10px 8px;font-size:12px;font-weight:700;color:${isBuy ? green : red};">${t.side?.toUpperCase()}</td>
-      <td style="padding:10px 8px;color:#d1d5db;font-family:monospace;font-size:12px;">$${t.price?.toFixed(4)}</td>
-      <td style="padding:10px 8px;color:#9ca3af;font-size:12px;">${t.quantity?.toFixed(2)}</td>
-      <td style="padding:10px 8px;color:#d1d5db;font-size:12px;">$${t.amount?.toFixed(2)}</td>
-      <td style="padding:10px 8px;font-size:12px;font-weight:600;color:${hasPnl ? pnlColor(t.pnl!) : "#6b7280"};">
-        ${hasPnl ? fmtMoneyFull(t.pnl) : "—"}
+      <td style="padding:9px 8px;color:#6b7280;font-size:11px;">${i + 1}</td>
+      <td style="padding:9px 8px;color:#d1d5db;font-size:11px;">${fmtDate(t.timestamp)}</td>
+      <td style="padding:9px 8px;font-weight:700;font-size:11px;color:${isBuy ? green : red};">${t.side?.toUpperCase()}</td>
+      <td style="padding:9px 8px;color:#d1d5db;font-family:monospace;font-size:11px;">$${t.price?.toFixed(4)}</td>
+      <td style="padding:9px 8px;color:#9ca3af;font-size:11px;">${t.quantity?.toFixed(2)}</td>
+      <td style="padding:9px 8px;color:#d1d5db;font-size:11px;">$${t.amount?.toFixed(2)}</td>
+      <td style="padding:9px 8px;font-weight:600;font-size:12px;color:${hasPnl ? pnlColor(t.pnl!) : "#6b7280"};">
+        ${hasPnl ? fmtSigned(t.pnl) : "—"}
       </td>
-      <td style="padding:10px 8px;color:#6b7280;font-size:11px;">${t.reason ?? "—"}</td>
+      <td style="padding:9px 8px;color:#6b7280;font-size:11px;">${t.reason ?? "—"}</td>
     </tr>`;
-  }).join("");
+  }).join("") : `<tr><td colspan="8" style="padding:16px 10px;color:#4b5563;font-size:12px;text-align:center;">No trades executed this month.</td></tr>`;
 
-  const profitBlock = isProfitable ? `
-  <!-- PERFORMANCE FEE SECTION (PROFIT) -->
-  <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;background:#0d1a0d;border:1px solid ${green}30;border-radius:12px;overflow:hidden;">
+  // ── Profit / Loss block ──
+  const profitBlock = stats.net_pnl > 0 ? `
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;background:#0d1a0d;border:1px solid ${green}30;border-radius:12px;overflow:hidden;">
     <tr><td style="padding:20px 24px 0;">
-      <div style="color:${green};font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;">
-        Performance Fee — ${(client.profit_share_pct * 100).toFixed(0)}% per Contract
+      <div style="color:${green};font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;">
+        Performance Fee — ${(client.profit_share_pct * 100).toFixed(0)}% of Net Profit (per contract)
       </div>
-    </td></tr>
-    <tr><td style="padding:0 24px;">
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
-          <td style="padding:8px 0;color:#9ca3af;font-size:13px;width:55%;">Gross Monthly P&L</td>
-          <td style="padding:8px 0;color:${pnlColor(stats.gross_pnl)};font-size:13px;font-weight:600;text-align:right;">
-            ${fmtMoneyFull(stats.gross_pnl)}
-          </td>
+          <td style="padding:7px 0;color:#9ca3af;font-size:13px;">Trading P&L (capital-adjusted)</td>
+          <td style="padding:7px 0;color:${pnlColor(stats.gross_pnl)};font-size:13px;font-weight:600;text-align:right;">${fmtSigned(stats.gross_pnl)}</td>
         </tr>
         ${stats.carried_loss_in > 0 ? `
         <tr>
-          <td style="padding:8px 0;color:#9ca3af;font-size:13px;">Less: Carried Loss from Prior Month</td>
-          <td style="padding:8px 0;color:${red};font-size:13px;font-weight:600;text-align:right;">
-            −${fmtMoney(stats.carried_loss_in)}
-          </td>
+          <td style="padding:7px 0;color:#9ca3af;font-size:13px;">Less: Carried Loss from Prior Month</td>
+          <td style="padding:7px 0;color:${red};font-size:13px;font-weight:600;text-align:right;">−${fmtMoney(stats.carried_loss_in)}</td>
         </tr>` : ""}
         <tr>
-          <td style="padding:8px 0;border-top:1px solid #1f2937;color:#e5e7eb;font-size:14px;font-weight:700;">Net Profit</td>
-          <td style="padding:8px 0;border-top:1px solid #1f2937;color:${green};font-size:14px;font-weight:700;text-align:right;">
-            ${fmtMoneyFull(stats.net_pnl)}
-          </td>
+          <td style="padding:10px 0 7px;border-top:1px solid #1f2937;color:#e5e7eb;font-size:14px;font-weight:700;">Net Profit</td>
+          <td style="padding:10px 0 7px;border-top:1px solid #1f2937;color:${green};font-size:14px;font-weight:700;text-align:right;">${fmtSigned(stats.net_pnl)}</td>
         </tr>
         <tr>
-          <td style="padding:12px 0 8px;color:#e5e7eb;font-size:14px;font-weight:700;">
-            Performance Fee (${(client.profit_share_pct * 100).toFixed(0)}%)
-          </td>
-          <td style="padding:12px 0 8px;color:${gold};font-size:18px;font-weight:800;text-align:right;">
-            ${fmtMoney(stats.performance_fee)} USDT
-          </td>
+          <td style="padding:10px 0 4px;color:#e5e7eb;font-size:15px;font-weight:700;">Performance Fee Due (${(client.profit_share_pct * 100).toFixed(0)}%)</td>
+          <td style="padding:10px 0 4px;color:${gold};font-size:20px;font-weight:800;text-align:right;">${fmtMoney(stats.performance_fee)} USDT</td>
         </tr>
       </table>
-    </td></tr>
-    <tr><td style="padding:4px 24px 20px;">
-      ${rate ? `
-      <div style="color:#6b7280;font-size:12px;">
-        BDT equivalent: ${fmtFiat(feeInFiatLower, client.fiat_currency)} – ${fmtFiat(feeInFiatUpper, client.fiat_currency)}
-        &nbsp;(at current P2P bank transfer rates)
+      ${rate ? `<div style="color:#6b7280;font-size:12px;margin-bottom:16px;">
+        ≈ ${fmtFiat(feeInFiatLow, client.fiat_currency)} – ${fmtFiat(feeInFiatHigh, client.fiat_currency)} at current P2P rates
       </div>` : ""}
     </td></tr>
 
-    <!-- Payment Instructions -->
+    <!-- Payment instructions -->
     <tr><td style="background:#111827;padding:20px 24px;border-top:1px solid #1f2937;">
       <div style="color:${gold};font-size:13px;font-weight:700;margin-bottom:14px;">
-        ► Please Send ${fmtMoney(stats.performance_fee)} USDT To:
+        ► Please send ${fmtMoney(stats.performance_fee)} USDT within 5 business days:
       </div>
       <table width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-          <td width="48%" valign="top" style="padding-right:12px;">
-            <div style="background:#0a0a0a;border:1px solid #374151;border-radius:10px;padding:16px;">
-              <div style="color:${gold};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">
-                Option 1 — Binance Transfer
-              </div>
-              <div style="margin-bottom:6px;">
-                <span style="color:#6b7280;font-size:12px;">Username:</span>
-                <span style="color:#e5e7eb;font-size:12px;font-weight:600;margin-left:6px;">${PAYMENT_BINANCE_USER}</span>
-              </div>
-              <div>
-                <span style="color:#6b7280;font-size:12px;">UID:</span>
-                <span style="color:#e5e7eb;font-size:12px;font-weight:600;margin-left:6px;font-family:monospace;">${PAYMENT_BINANCE_UID}</span>
-              </div>
+        <tr valign="top">
+          <td width="47%" style="padding-right:10px;">
+            <div style="background:#0a0a0a;border:1px solid #374151;border-radius:10px;padding:14px;">
+              <div style="color:${gold};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Option 1 — Binance</div>
+              <div style="margin:4px 0;"><span style="color:#6b7280;font-size:11px;">Username: </span><span style="color:#e5e7eb;font-size:11px;font-weight:600;">${PAYMENT_BINANCE_USER}</span></div>
+              <div><span style="color:#6b7280;font-size:11px;">UID: </span><span style="color:#e5e7eb;font-size:11px;font-weight:600;font-family:monospace;">${PAYMENT_BINANCE_UID}</span></div>
             </div>
           </td>
-          <td width="4%" style="text-align:center;vertical-align:middle;color:#4b5563;font-size:13px;">OR</td>
-          <td width="48%" valign="top" style="padding-left:12px;">
-            <div style="background:#0a0a0a;border:1px solid #374151;border-radius:10px;padding:16px;">
-              <div style="color:${gold};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">
-                Option 2 — UCB Bank (${client.fiat_currency})
-              </div>
-              <div style="margin-bottom:4px;">
-                <span style="color:#6b7280;font-size:11px;">Account Holder:</span>
-                <span style="color:#e5e7eb;font-size:11px;font-weight:600;margin-left:4px;">${PAYMENT_BANK_HOLDER}</span>
-              </div>
-              <div style="margin-bottom:4px;">
-                <span style="color:#6b7280;font-size:11px;">Bank:</span>
-                <span style="color:#e5e7eb;font-size:11px;margin-left:4px;">${PAYMENT_BANK_NAME}</span>
-              </div>
-              <div style="margin-bottom:4px;">
-                <span style="color:#6b7280;font-size:11px;">Branch:</span>
-                <span style="color:#e5e7eb;font-size:11px;margin-left:4px;">${PAYMENT_BANK_BRANCH}</span>
-              </div>
-              <div style="margin-bottom:4px;">
-                <span style="color:#6b7280;font-size:11px;">A/C No:</span>
-                <span style="color:#e5e7eb;font-size:11px;font-weight:600;font-family:monospace;margin-left:4px;">${PAYMENT_BANK_ACCOUNT}</span>
-              </div>
-              <div>
-                <span style="color:#6b7280;font-size:11px;">Routing:</span>
-                <span style="color:#e5e7eb;font-size:11px;font-family:monospace;margin-left:4px;">${PAYMENT_BANK_ROUTING}</span>
-              </div>
+          <td width="6%" style="text-align:center;vertical-align:middle;color:#4b5563;font-size:12px;">or</td>
+          <td width="47%" style="padding-left:10px;">
+            <div style="background:#0a0a0a;border:1px solid #374151;border-radius:10px;padding:14px;">
+              <div style="color:${gold};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Option 2 — UCB Bank</div>
+              <div style="margin:3px 0;"><span style="color:#6b7280;font-size:11px;">Name: </span><span style="color:#e5e7eb;font-size:11px;font-weight:600;">${PAYMENT_BANK_HOLDER}</span></div>
+              <div style="margin:3px 0;"><span style="color:#6b7280;font-size:11px;">Bank: </span><span style="color:#e5e7eb;font-size:11px;">${PAYMENT_BANK_NAME}</span></div>
+              <div style="margin:3px 0;"><span style="color:#6b7280;font-size:11px;">Branch: </span><span style="color:#e5e7eb;font-size:11px;">${PAYMENT_BANK_BRANCH}</span></div>
+              <div style="margin:3px 0;"><span style="color:#6b7280;font-size:11px;">A/C: </span><span style="color:#e5e7eb;font-size:11px;font-weight:600;font-family:monospace;">${PAYMENT_BANK_ACCOUNT}</span></div>
+              <div><span style="color:#6b7280;font-size:11px;">Routing: </span><span style="color:#e5e7eb;font-size:11px;font-family:monospace;">${PAYMENT_BANK_ROUTING}</span></div>
             </div>
           </td>
         </tr>
       </table>
-      <div style="margin-top:14px;color:#4b5563;font-size:11px;line-height:1.5;">
-        Please complete this payment within 5 business days of receiving this report.
-        Once sent, please reply to this email or message us on WhatsApp with the transaction reference.
+      <div style="margin-top:12px;color:#4b5563;font-size:11px;line-height:1.6;">
+        Once paid, please reply with the transaction reference so we can record it in your account.
       </div>
     </td></tr>
   </table>` : `
-  <!-- LOSS CARRIED FORWARD SECTION -->
-  <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;background:#1a0d0d;border:1px solid ${red}30;border-radius:12px;overflow:hidden;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;background:#1a0d0d;border:1px solid ${red}30;border-radius:12px;overflow:hidden;">
     <tr><td style="padding:20px 24px;">
-      <div style="color:${red};font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;">
-        Loss — No Performance Fee This Month
-      </div>
+      <div style="color:${red};font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:14px;">No Performance Fee This Month</div>
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
-          <td style="padding:8px 0;color:#9ca3af;font-size:13px;width:55%;">Monthly Loss</td>
-          <td style="padding:8px 0;color:${red};font-size:13px;font-weight:600;text-align:right;">
-            ${fmtMoneyFull(stats.gross_pnl)}
-          </td>
+          <td style="padding:7px 0;color:#9ca3af;font-size:13px;">Trading P&L (capital-adjusted)</td>
+          <td style="padding:7px 0;color:${pnlColor(stats.gross_pnl)};font-size:13px;font-weight:600;text-align:right;">${fmtSigned(stats.gross_pnl)}</td>
         </tr>
         ${stats.carried_loss_in > 0 ? `
         <tr>
-          <td style="padding:8px 0;color:#9ca3af;font-size:13px;">Prior Carried Loss</td>
-          <td style="padding:8px 0;color:${red};font-size:13px;font-weight:600;text-align:right;">
-            −${fmtMoney(stats.carried_loss_in)}
-          </td>
+          <td style="padding:7px 0;color:#9ca3af;font-size:13px;">Prior Carried Loss</td>
+          <td style="padding:7px 0;color:${red};font-size:13px;font-weight:600;text-align:right;">−${fmtMoney(stats.carried_loss_in)}</td>
         </tr>` : ""}
         <tr>
-          <td style="padding:8px 0;border-top:1px solid #1f2937;color:#e5e7eb;font-size:14px;font-weight:700;">
-            Total Loss Carried Forward
-          </td>
-          <td style="padding:8px 0;border-top:1px solid #1f2937;color:${red};font-size:14px;font-weight:700;text-align:right;">
-            −${fmtMoney(stats.carried_loss_out)}
-          </td>
+          <td style="padding:10px 0 7px;border-top:1px solid #1f2937;color:#e5e7eb;font-size:14px;font-weight:700;">Carried Forward to Next Month</td>
+          <td style="padding:10px 0 7px;border-top:1px solid #1f2937;color:${red};font-size:14px;font-weight:700;text-align:right;">−${fmtMoney(stats.carried_loss_out)}</td>
         </tr>
       </table>
       <div style="margin-top:14px;background:#0a0a0a;border-radius:8px;padding:14px;color:#9ca3af;font-size:13px;line-height:1.6;">
-        No performance fee is due this month. The loss of
-        <strong style="color:${red};">${fmtMoney(stats.carried_loss_out)}</strong>
-        will be deducted from the first profitable month before any fee calculation.
-        Your trading account continues operating at full capacity.
+        The loss of <strong style="color:${red};">${fmtMoney(stats.carried_loss_out)}</strong> will be deducted from the first
+        profitable month before any fee is calculated. No payment is due. Your account continues at full capacity.
       </div>
     </td></tr>
   </table>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Arcus Quant Fund — Monthly Report</title></head>
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
 <body style="margin:0;padding:0;background:#000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#000;">
-<tr><td align="center" style="padding:40px 20px;">
-<table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#0a0a0a;border-radius:16px;overflow:hidden;border:1px solid #1f2937;">
+<tr><td align="center" style="padding:32px 16px;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:660px;background:#0a0a0a;border-radius:16px;border:1px solid #1f2937;overflow:hidden;">
 
   <!-- HEADER -->
-  <tr><td style="background:linear-gradient(135deg,#111827 0%,#0a0a0a 100%);padding:32px 32px 28px;border-bottom:1px solid #1f2937;">
-    <table width="100%" cellpadding="0" cellspacing="0">
-      <tr>
-        <td>
-          <div style="color:${gold};font-size:22px;font-weight:800;letter-spacing:-0.02em;">◈ ARCUS QUANT FUND</div>
-          <div style="color:#6b7280;font-size:13px;margin-top:4px;">Monthly Performance Report</div>
-        </td>
-        <td align="right">
-          <div style="background:${gold}15;border:1px solid ${gold}40;border-radius:8px;padding:8px 16px;display:inline-block;">
-            <div style="color:${gold};font-size:13px;font-weight:700;">${monthLabel}</div>
-          </div>
-        </td>
-      </tr>
-    </table>
+  <tr><td style="background:linear-gradient(135deg,#111827,#0a0a0a);padding:28px 32px;border-bottom:1px solid #1f2937;">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td>
+        <div style="color:${gold};font-size:21px;font-weight:800;letter-spacing:-0.02em;">◈ ARCUS QUANT FUND</div>
+        <div style="color:#6b7280;font-size:12px;margin-top:3px;">Monthly Performance Report</div>
+      </td>
+      <td align="right">
+        <div style="background:${gold}15;border:1px solid ${gold}40;border-radius:8px;padding:7px 14px;display:inline-block;">
+          <div style="color:${gold};font-size:13px;font-weight:700;">${monthLabel}</div>
+        </div>
+      </td>
+    </tr></table>
   </td></tr>
 
   <!-- GREETING -->
-  <tr><td style="padding:28px 32px 8px;">
-    <div style="color:#e5e7eb;font-size:16px;margin-bottom:8px;">Dear <strong style="color:#fff;">${client.name}</strong>,</div>
-    <div style="color:#6b7280;font-size:14px;line-height:1.6;">
+  <tr><td style="padding:24px 32px 16px;">
+    <div style="color:#e5e7eb;font-size:15px;margin-bottom:8px;">Dear <strong style="color:#fff;">${client.name}</strong>,</div>
+    <div style="color:#6b7280;font-size:13px;line-height:1.7;">
       Here is your complete account statement for <strong style="color:#9ca3af;">${monthLabel}</strong>.
-      Every transaction has been recorded and is auditable on your dashboard.
+      Every trade, capital movement, and balance snapshot has been recorded and is fully auditable.
     </div>
   </td></tr>
 
-  <!-- ACCOUNT STATEMENT -->
-  <tr><td style="padding:8px 32px 0;">
-    <div style="color:${gold};font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">
-      Account Statement
-    </div>
+  <!-- ACCOUNT OVERVIEW -->
+  <tr><td style="padding:0 32px 24px;">
+    <div style="color:${gold};font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Account Overview</div>
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:12px;overflow:hidden;">
       <tr>
-        <td style="padding:16px 20px;border-bottom:1px solid #1f2937;">
-          <div style="color:#6b7280;font-size:12px;margin-bottom:4px;">Opening Balance</div>
-          <div style="color:#e5e7eb;font-size:20px;font-weight:700;">${fmtMoney(stats.opening_balance)}</div>
+        <td style="padding:16px;border-right:1px solid #1f2937;border-bottom:1px solid #1f2937;">
+          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Opening Balance</div>
+          <div style="color:#e5e7eb;font-size:18px;font-weight:700;">${fmtMoney(stats.opening_balance)}</div>
         </td>
-        <td style="padding:16px 20px;border-bottom:1px solid #1f2937;border-left:1px solid #1f2937;">
-          <div style="color:#6b7280;font-size:12px;margin-bottom:4px;">Closing Balance</div>
-          <div style="color:#e5e7eb;font-size:20px;font-weight:700;">${fmtMoney(stats.closing_balance)}</div>
+        <td style="padding:16px;border-right:1px solid #1f2937;border-bottom:1px solid #1f2937;">
+          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Closing Balance</div>
+          <div style="color:#e5e7eb;font-size:18px;font-weight:700;">${fmtMoney(stats.closing_balance)}</div>
         </td>
-        <td style="padding:16px 20px;border-bottom:1px solid #1f2937;border-left:1px solid #1f2937;">
-          <div style="color:#6b7280;font-size:12px;margin-bottom:4px;">Gross Monthly P&L</div>
-          <div style="color:${pnlColor(stats.gross_pnl)};font-size:20px;font-weight:700;">
-            ${fmtMoneyFull(stats.gross_pnl)}
-          </div>
+        <td style="padding:16px;border-bottom:1px solid #1f2937;">
+          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Trading P&L</div>
+          <div style="color:${pnlColor(stats.gross_pnl)};font-size:18px;font-weight:700;">${fmtSigned(stats.gross_pnl)}</div>
+          ${roi != null ? `<div style="color:#4b5563;font-size:11px;margin-top:2px;">${roi >= 0 ? "+" : ""}${roi.toFixed(2)}% on capital</div>` : ""}
         </td>
       </tr>
+      <!-- Capital flows row (only if there were deposits/withdrawals) -->
+      ${stats.total_deposits > 0 || stats.total_withdrawals > 0 ? `
       <tr>
-        <td colspan="3" style="padding:12px 20px;">
+        <td colspan="3" style="padding:12px 16px;">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
-              <td style="color:#6b7280;font-size:12px;padding:4px 0;">Monthly ROI</td>
-              <td style="color:${pnlColor(stats.gross_pnl)};font-size:12px;font-weight:600;text-align:right;padding:4px 0;">
-                ${stats.opening_balance > 0 ? fmtMoneyFull((stats.gross_pnl / stats.opening_balance) * 100, "").replace("$", "") + "%" : "N/A"}
+              <td style="color:#6b7280;font-size:12px;padding:3px 0;">Net New Capital This Month</td>
+              <td style="color:${stats.net_new_capital >= 0 ? blue : red};font-size:12px;font-weight:600;text-align:right;padding:3px 0;">
+                ${stats.net_new_capital >= 0 ? "+" : "−"}${fmtMoney(Math.abs(stats.net_new_capital))}
+                <span style="color:#4b5563;font-weight:400;"> (${fmtMoney(stats.total_deposits)} in · ${fmtMoney(stats.total_withdrawals)} out)</span>
               </td>
             </tr>
-            ${stats.carried_loss_in > 0 ? `
             <tr>
-              <td style="color:#6b7280;font-size:12px;padding:4px 0;">Carried Loss (from prior month)</td>
-              <td style="color:${red};font-size:12px;font-weight:600;text-align:right;padding:4px 0;">
-                −${fmtMoney(stats.carried_loss_in)}
+              <td colspan="2" style="padding-top:4px;">
+                <div style="color:#4b5563;font-size:11px;line-height:1.5;">
+                  P&L is calculated after removing capital movements — only bot-generated profit/loss is counted.
+                </div>
               </td>
-            </tr>` : ""}
+            </tr>
           </table>
         </td>
-      </tr>
+      </tr>` : ""}
     </table>
   </td></tr>
 
@@ -445,40 +423,32 @@ function buildEmailHtml(
   </td></tr>
 
   <!-- TRADING PERFORMANCE -->
-  <tr><td style="padding:8px 32px 0;">
-    <div style="color:${gold};font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">
-      Trading Performance
-    </div>
+  <tr><td style="padding:0 32px 24px;">
+    <div style="color:${gold};font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Trading Performance</div>
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:12px;overflow:hidden;">
       <tr>
-        <td style="padding:16px;text-align:center;border-right:1px solid #1f2937;">
-          <div style="color:#6b7280;font-size:11px;margin-bottom:6px;">Total Trades</div>
-          <div style="color:#fff;font-size:22px;font-weight:800;">${stats.total_trades}</div>
-          <div style="color:#6b7280;font-size:11px;margin-top:2px;">${stats.winning_trades}W / ${stats.losing_trades}L</div>
+        <td style="padding:14px;text-align:center;border-right:1px solid #1f2937;">
+          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Trades</div>
+          <div style="color:#fff;font-size:20px;font-weight:800;">${stats.total_trades}</div>
+          <div style="color:#6b7280;font-size:11px;margin-top:2px;">${stats.winning_trades}W · ${stats.losing_trades}L</div>
         </td>
-        <td style="padding:16px;text-align:center;border-right:1px solid #1f2937;">
-          <div style="color:#6b7280;font-size:11px;margin-bottom:6px;">Win Rate</div>
-          <div style="color:${stats.win_rate >= 50 ? green : red};font-size:22px;font-weight:800;">${stats.win_rate.toFixed(1)}%</div>
+        <td style="padding:14px;text-align:center;border-right:1px solid #1f2937;">
+          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Win Rate</div>
+          <div style="color:${stats.win_rate >= 50 ? green : red};font-size:20px;font-weight:800;">${stats.win_rate.toFixed(1)}%</div>
         </td>
-        <td style="padding:16px;text-align:center;border-right:1px solid #1f2937;">
-          <div style="color:#6b7280;font-size:11px;margin-bottom:6px;">Profit Factor</div>
-          <div style="color:${stats.profit_factor >= 1 ? green : red};font-size:22px;font-weight:800;">
+        <td style="padding:14px;text-align:center;border-right:1px solid #1f2937;">
+          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Profit Factor</div>
+          <div style="color:${stats.profit_factor >= 1 ? green : red};font-size:20px;font-weight:800;">
             ${isFinite(stats.profit_factor) ? stats.profit_factor.toFixed(2) : "∞"}
           </div>
         </td>
-        <td style="padding:16px;text-align:center;">
-          <div style="color:#6b7280;font-size:11px;margin-bottom:6px;">Avg Win</div>
-          <div style="color:${green};font-size:22px;font-weight:800;">${fmtMoney(stats.avg_win)}</div>
-        </td>
-      </tr>
-      <tr style="border-top:1px solid #1f2937;">
-        <td colspan="2" style="padding:12px 16px;border-right:1px solid #1f2937;">
-          <span style="color:#6b7280;font-size:12px;">Best Trade: </span>
-          <span style="color:${green};font-size:12px;font-weight:600;">${fmtMoneyFull(stats.best_trade_pnl)}</span>
-        </td>
-        <td colspan="2" style="padding:12px 16px;">
-          <span style="color:#6b7280;font-size:12px;">Worst Trade: </span>
-          <span style="color:${red};font-size:12px;font-weight:600;">${fmtMoneyFull(stats.worst_trade_pnl)}</span>
+        <td style="padding:14px;text-align:center;">
+          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Best / Worst</div>
+          <div style="font-size:12px;font-weight:600;">
+            <span style="color:${green};">${fmtSigned(stats.best_trade_pnl)}</span>
+            <span style="color:#4b5563;"> · </span>
+            <span style="color:${red};">${fmtSigned(stats.worst_trade_pnl)}</span>
+          </div>
         </td>
       </tr>
     </table>
@@ -486,109 +456,108 @@ function buildEmailHtml(
 
   <!-- EXCHANGE RATES -->
   ${rate ? `
-  <tr><td style="padding:24px 32px 0;">
-    <div style="color:${gold};font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">
-      USDT → ${client.fiat_currency} Exchange Rates &nbsp;
-      <span style="color:#4b5563;font-size:10px;font-weight:400;text-transform:none;">
-        Binance P2P · Bank Transfer · 1,000+ USDT · as of ${fmtDate(rate.fetched_at)}
-      </span>
+  <tr><td style="padding:0 32px 24px;">
+    <div style="color:${gold};font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">
+      USDT → ${client.fiat_currency} &nbsp;<span style="color:#4b5563;font-weight:400;text-transform:none;font-size:10px;">Binance P2P · Bank Transfer · 1,000+ USDT · ${fmtDate(rate.fetched_at)}</span>
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:12px;overflow:hidden;">
       <tr>
-        <td style="padding:16px;border-right:1px solid #1f2937;">
-          <div style="color:#6b7280;font-size:11px;margin-bottom:6px;">Rate Range</div>
-          <div style="color:#fff;font-size:16px;font-weight:700;">
+        <td style="padding:14px 16px;border-right:1px solid #1f2937;">
+          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">P2P Rate Range</div>
+          <div style="color:#fff;font-size:15px;font-weight:700;">
             ${rate.lower_bound.toLocaleString()} – ${rate.upper_bound.toLocaleString()}
-            <span style="color:#6b7280;font-size:12px;font-weight:400;"> ${client.fiat_currency}/USDT</span>
+            <span style="color:#6b7280;font-size:11px;"> ${client.fiat_currency}/USDT</span>
           </div>
         </td>
-        <td style="padding:16px;border-right:1px solid #1f2937;">
-          <div style="color:#6b7280;font-size:11px;margin-bottom:6px;">Your Balance at Lower Rate</div>
-          <div style="color:#9ca3af;font-size:16px;font-weight:700;">
-            ${fmtFiat(closingFiatLower, client.fiat_currency)}
-          </div>
-          <div style="color:#4b5563;font-size:11px;">(${rate.lower_bound.toLocaleString()} ${client.fiat_currency}/USDT)</div>
+        <td style="padding:14px 16px;border-right:1px solid #1f2937;">
+          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Your Balance · Lower Rate</div>
+          <div style="color:#9ca3af;font-size:15px;font-weight:700;">${fmtFiat(closingFiatLow, client.fiat_currency)}</div>
+          <div style="color:#4b5563;font-size:11px;">${rate.lower_bound.toLocaleString()} ${client.fiat_currency}/USDT</div>
         </td>
-        <td style="padding:16px;">
-          <div style="color:#6b7280;font-size:11px;margin-bottom:6px;">Your Balance at Upper Rate</div>
-          <div style="color:${gold};font-size:16px;font-weight:700;">
-            ${fmtFiat(closingFiatUpper, client.fiat_currency)}
-          </div>
-          <div style="color:#4b5563;font-size:11px;">(${rate.upper_bound.toLocaleString()} ${client.fiat_currency}/USDT)</div>
+        <td style="padding:14px 16px;">
+          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Your Balance · Upper Rate</div>
+          <div style="color:${gold};font-size:15px;font-weight:700;">${fmtFiat(closingFiatHigh, client.fiat_currency)}</div>
+          <div style="color:#4b5563;font-size:11px;">${rate.upper_bound.toLocaleString()} ${client.fiat_currency}/USDT</div>
         </td>
       </tr>
     </table>
   </td></tr>` : ""}
 
-  <!-- TRANSACTION HISTORY -->
-  <tr><td style="padding:24px 32px 0;">
-    <div style="color:${gold};font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">
-      Transaction History — ${monthLabel}
-    </div>
-    ${trades.length === 0 ? `
-    <div style="background:#111827;border-radius:12px;padding:24px;text-align:center;color:#4b5563;font-size:14px;">
-      No trades executed this month.
-    </div>` : `
+  <!-- CAPITAL MOVEMENTS -->
+  <tr><td style="padding:0 32px 24px;">
+    <div style="color:${gold};font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Capital Movements — ${monthLabel}</div>
     <div style="background:#111827;border-radius:12px;overflow:hidden;">
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr style="background:#0a0a0a;border-bottom:1px solid #374151;">
-          <th style="padding:10px 8px;color:#6b7280;font-size:11px;font-weight:600;text-align:left;text-transform:uppercase;">#</th>
-          <th style="padding:10px 8px;color:#6b7280;font-size:11px;font-weight:600;text-align:left;text-transform:uppercase;">Date</th>
-          <th style="padding:10px 8px;color:#6b7280;font-size:11px;font-weight:600;text-align:left;text-transform:uppercase;">Side</th>
-          <th style="padding:10px 8px;color:#6b7280;font-size:11px;font-weight:600;text-align:left;text-transform:uppercase;">Price</th>
-          <th style="padding:10px 8px;color:#6b7280;font-size:11px;font-weight:600;text-align:left;text-transform:uppercase;">Qty</th>
-          <th style="padding:10px 8px;color:#6b7280;font-size:11px;font-weight:600;text-align:left;text-transform:uppercase;">Amount</th>
-          <th style="padding:10px 8px;color:#6b7280;font-size:11px;font-weight:600;text-align:left;text-transform:uppercase;">P&L</th>
-          <th style="padding:10px 8px;color:#6b7280;font-size:11px;font-weight:600;text-align:left;text-transform:uppercase;">Reason</th>
+          <th style="padding:9px 10px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Date</th>
+          <th style="padding:9px 10px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Type</th>
+          <th style="padding:9px 10px;color:#6b7280;font-size:10px;font-weight:600;text-align:right;text-transform:uppercase;">Amount</th>
+          <th style="padding:9px 10px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Notes</th>
+        </tr>
+        ${capitalRows}
+      </table>
+    </div>
+  </td></tr>
+
+  <!-- TRANSACTIONS -->
+  <tr><td style="padding:0 32px 24px;">
+    <div style="color:${gold};font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">
+      Trade Transactions — ${monthLabel}
+    </div>
+    <div style="background:#111827;border-radius:12px;overflow:hidden;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr style="background:#0a0a0a;border-bottom:1px solid #374151;">
+          <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">#</th>
+          <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Date</th>
+          <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Side</th>
+          <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Price</th>
+          <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Qty</th>
+          <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Amount</th>
+          <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">P&L</th>
+          <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Reason</th>
         </tr>
         ${tradeRows}
       </table>
-    </div>`}
+    </div>
   </td></tr>
 
   <!-- AUDIT NOTICE -->
-  <tr><td style="padding:24px 32px 0;">
-    <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:10px;padding:16px 20px;">
-      <div style="color:#60a5fa;font-size:12px;font-weight:600;margin-bottom:6px;">Audit Trail</div>
-      <div style="color:#6b7280;font-size:12px;line-height:1.6;">
-        This report is auto-generated from live trading data. Every balance snapshot, trade, and
-        rate fetch is permanently logged in our immutable audit system.
-        View your complete record at
-        <a href="${ARCUS_SITE}/dashboard" style="color:#60a5fa;text-decoration:none;">${ARCUS_SITE}/dashboard</a>.
-      </div>
+  <tr><td style="padding:0 32px 24px;">
+    <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:10px;padding:14px 18px;">
+      <span style="color:${blue};font-size:12px;font-weight:600;">Audit Trail: </span>
+      <span style="color:#6b7280;font-size:12px;line-height:1.6;">
+        Every balance snapshot, capital movement, trade, and report is permanently logged.
+        View your full history at
+        <a href="${ARCUS_SITE}/dashboard" style="color:${blue};text-decoration:none;">${ARCUS_SITE}/dashboard</a>
+      </span>
     </div>
   </td></tr>
 
   <!-- FOOTER -->
-  <tr><td style="padding:28px 32px 32px;border-top:1px solid #1f2937;margin-top:24px;">
-    <table width="100%" cellpadding="0" cellspacing="0">
-      <tr>
-        <td>
-          <div style="color:${gold};font-size:14px;font-weight:700;margin-bottom:4px;">◈ Arcus Quant Fund</div>
-          <div style="color:#4b5563;font-size:12px;">Systematic Algorithmic Trading</div>
-        </td>
-        <td align="right" valign="top">
-          <div style="color:#4b5563;font-size:11px;line-height:2;">
-            <a href="${ARCUS_SITE}" style="color:#6b7280;text-decoration:none;">${ARCUS_SITE}</a><br/>
-            <a href="mailto:contact@arcusquantfund.com" style="color:#6b7280;text-decoration:none;">contact@arcusquantfund.com</a>
-          </div>
-        </td>
-      </tr>
-    </table>
-    <div style="margin-top:16px;color:#374151;font-size:11px;line-height:1.5;border-top:1px solid #111;padding-top:16px;">
-      This report was generated automatically on ${new Date().toUTCString()}.
-      Past performance does not guarantee future results. This is not financial advice.
+  <tr><td style="padding:20px 32px 28px;border-top:1px solid #111827;">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td>
+        <div style="color:${gold};font-size:13px;font-weight:700;">◈ Arcus Quant Fund</div>
+        <div style="color:#4b5563;font-size:11px;margin-top:2px;">Systematic Algorithmic Trading</div>
+      </td>
+      <td align="right" valign="top">
+        <div style="color:#4b5563;font-size:11px;line-height:2.2;">
+          <a href="${ARCUS_SITE}" style="color:#6b7280;text-decoration:none;">${ARCUS_SITE}</a><br/>
+          <a href="mailto:contact@arcusquantfund.com" style="color:#6b7280;text-decoration:none;">contact@arcusquantfund.com</a>
+        </div>
+      </td>
+    </tr></table>
+    <div style="margin-top:14px;color:#374151;font-size:10px;line-height:1.5;border-top:1px solid #111;padding-top:14px;">
+      Generated ${new Date().toUTCString()} · Past performance does not guarantee future results.
     </div>
   </td></tr>
 
 </table>
-</td></tr>
-</table>
-</body>
-</html>`;
+</td></tr></table>
+</body></html>`;
 }
 
-// ─── Main Handler ─────────────────────────────────────────────────────────────
+// ─── Main handler ─────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
   if (!isAuthorized(req)) {
@@ -597,7 +566,6 @@ export async function GET(req: NextRequest) {
 
   const resend   = new Resend(process.env.RESEND_API_KEY);
   const supabase = createServiceClient();
-
   const { year, month, label, startISO, endISO } = getPreviousMonth();
 
   const results = {
@@ -606,27 +574,20 @@ export async function GET(req: NextRequest) {
     errors: [] as { client: string; error: string }[],
   };
 
-  // ── 1. Fetch all active clients ──────────────────────────────────────────
   const { data: clients, error: clientsErr } = await supabase
     .from("clients")
     .select("id, name, email, bot_id, fiat_currency, profit_share_pct, carried_loss, initial_capital")
     .eq("is_active", true);
 
   if (clientsErr || !clients) {
-    return NextResponse.json(
-      { error: "Failed to fetch clients", detail: clientsErr?.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch clients", detail: clientsErr?.message }, { status: 500 });
   }
 
   for (const client of clients as Client[]) {
     try {
-      if (!client.bot_id || !client.email) {
-        results.skipped++;
-        continue;
-      }
+      if (!client.bot_id || !client.email) { results.skipped++; continue; }
 
-      // ── 2. Fetch trades for the month ──────────────────────────────────
+      // Trades for the month
       const { data: tradeRows } = await supabase
         .from("trade_log")
         .select("trade_id, timestamp, symbol, side, price, quantity, amount, pnl, reason")
@@ -635,9 +596,7 @@ export async function GET(req: NextRequest) {
         .lte("timestamp", endISO)
         .order("timestamp", { ascending: true });
 
-      const trades = (tradeRows ?? []) as Trade[];
-
-      // ── 3. Fetch balance history for the month ─────────────────────────
+      // Balance history for the month
       const { data: balanceRows } = await supabase
         .from("balance_history")
         .select("balance, recorded_at")
@@ -646,9 +605,16 @@ export async function GET(req: NextRequest) {
         .lte("recorded_at", endISO)
         .order("recorded_at", { ascending: true });
 
-      const balances = (balanceRows ?? []) as BalancePoint[];
+      // Capital events for the month (deposits & withdrawals)
+      const { data: capitalRows } = await supabase
+        .from("capital_events")
+        .select("event_type, amount, notes, occurred_at")
+        .eq("client_id", client.id)
+        .gte("occurred_at", startISO)
+        .lte("occurred_at", endISO)
+        .order("occurred_at", { ascending: true });
 
-      // ── 4. Fetch latest exchange rate for client's fiat ────────────────
+      // Latest exchange rate
       const { data: rateRow } = await supabase
         .from("exchange_rates")
         .select("lower_bound, upper_bound, mid_rate, fetched_at")
@@ -658,40 +624,36 @@ export async function GET(req: NextRequest) {
         .limit(1)
         .single();
 
-      const rate = (rateRow as ExchangeRate | null);
+      const trades        = (tradeRows ?? []) as Trade[];
+      const balances      = (balanceRows ?? []) as BalancePoint[];
+      const capitalEvents = (capitalRows ?? []) as CapitalEvent[];
+      const rate          = rateRow as ExchangeRate | null;
 
-      // ── 5. Compute stats ───────────────────────────────────────────────
-      const stats = computeStats(
-        trades,
-        balances,
-        client.carried_loss ?? 0,
-        client.profit_share_pct ?? 0.5
-      );
-
-      // ── 6. Build and send email ────────────────────────────────────────
-      const html = buildEmailHtml(client, stats, trades, rate, label);
+      const stats = computeStats(trades, balances, capitalEvents, client.carried_loss ?? 0, client.profit_share_pct ?? 0.5);
+      const html  = buildEmail(client, stats, trades, capitalEvents, rate, label);
 
       const subject = stats.net_pnl > 0
-        ? `Your ${label} Report — Performance Fee Due: ${fmtMoney(stats.performance_fee)} USDT`
-        : `Your ${label} Report — Account Statement`;
+        ? `${label} Report — Performance Fee Due: ${fmtMoney(stats.performance_fee)} USDT`
+        : `${label} Report — Account Statement`;
 
       const { error: emailErr } = await resend.emails.send({
         from: ARCUS_EMAIL_FROM,
-        to: client.email,
-        cc: ARCUS_EMAIL_CC,
+        to:   client.email,
+        cc:   ARCUS_EMAIL_CC,
         subject,
         html,
       });
 
       if (emailErr) throw new Error(`Resend: ${emailErr.message}`);
 
-      // ── 7. Upsert monthly snapshot ─────────────────────────────────────
+      // Persist snapshot
       await supabase.from("monthly_snapshots").upsert({
-        client_id:         client.id,
-        year,
-        month,
+        client_id: client.id, year, month,
         opening_balance:   stats.opening_balance,
         closing_balance:   stats.closing_balance,
+        total_deposits:    stats.total_deposits,
+        total_withdrawals: stats.total_withdrawals,
+        net_new_capital:   stats.net_new_capital,
         gross_pnl:         stats.gross_pnl,
         carried_loss_in:   stats.carried_loss_in,
         net_pnl:           stats.net_pnl,
@@ -710,43 +672,34 @@ export async function GET(req: NextRequest) {
         report_sent_to:    client.email,
       }, { onConflict: "client_id,year,month" });
 
-      // ── 8. Update client's carried_loss for next month ─────────────────
-      await supabase
-        .from("clients")
+      // Roll carried_loss forward
+      await supabase.from("clients")
         .update({ carried_loss: stats.carried_loss_out })
         .eq("id", client.id);
 
-      // ── 9. Append to audit log ─────────────────────────────────────────
+      // Immutable audit entry
       await supabase.from("audit_log").insert({
         client_id:     client.id,
         event_type:    "REPORT_SENT",
         amount:        stats.performance_fee > 0 ? -stats.performance_fee : 0,
         balance_before: stats.opening_balance,
         balance_after:  stats.closing_balance,
-        description:   `Monthly report sent for ${label}. Fee due: ${fmtMoney(stats.performance_fee)} USDT`,
+        description:   `Monthly report sent for ${label}. Fee due: ${fmtMoney(stats.performance_fee)} USDT. Net P&L (capital-adj): ${fmtSigned(stats.gross_pnl)}`,
         metadata: {
           year, month, label,
-          gross_pnl:       stats.gross_pnl,
-          net_pnl:         stats.net_pnl,
-          performance_fee: stats.performance_fee,
-          carried_loss_out: stats.carried_loss_out,
-          trades_count:    stats.total_trades,
-          email_sent_to:   client.email,
-          exchange_rate:   rate ?? null,
+          gross_pnl: stats.gross_pnl, net_pnl: stats.net_pnl,
+          performance_fee: stats.performance_fee, carried_loss_out: stats.carried_loss_out,
+          total_deposits: stats.total_deposits, total_withdrawals: stats.total_withdrawals,
+          net_new_capital: stats.net_new_capital, trades_count: stats.total_trades,
+          email_sent_to: client.email,
         },
       });
 
       results.reports_sent++;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      results.errors.push({ client: client.name, error: msg });
+      results.errors.push({ client: (client as Client).name, error: err instanceof Error ? err.message : String(err) });
     }
   }
 
-  console.log("[monthly-report] Complete:", results);
-  return NextResponse.json({
-    success: true,
-    period: { year, month, label },
-    ...results,
-  });
+  return NextResponse.json({ success: true, period: { year, month, label }, ...results });
 }
