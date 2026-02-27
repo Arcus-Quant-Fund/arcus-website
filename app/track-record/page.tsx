@@ -13,7 +13,7 @@ async function getTrackRecordData() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
   );
 
-  const [{ data: stats }, { data: trades }, { data: allTrades }, { data: keyEvents }, { data: snapshots }] =
+  const [{ data: stats }, { data: trades }, { data: allTrades }, , { data: snapshots }] =
     await Promise.all([
       supabase
         .from("performance_stats")
@@ -23,7 +23,7 @@ async function getTrackRecordData() {
       // SELL-only trades for equity curve — filtered to the stated period
       supabase
         .from("trade_log")
-        .select("timestamp, pnl, pnl_percent, reason")
+        .select("timestamp, pnl, pnl_percent, reason, trade_id")
         .eq("client_id", "eth")
         .eq("side", "SELL")
         .not("pnl", "is", null)
@@ -66,19 +66,17 @@ async function getTrackRecordData() {
     stats: stats ?? null,
     trades: trades ?? [],
     allTrades: allTrades ?? [],
-    keyEvents: keyEvents ?? [],
     periodTWR,
   };
 }
 
 export default async function TrackRecordPage() {
-  const { stats, trades, allTrades, keyEvents, periodTWR } = await getTrackRecordData();
+  const { stats, trades, allTrades, periodTWR } = await getTrackRecordData();
   return (
     <TrackRecordClient
       stats={stats}
       trades={trades}
       allTrades={allTrades}
-      keyEvents={keyEvents}
       periodTWR={periodTWR}
     />
   );

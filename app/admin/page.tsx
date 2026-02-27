@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { createServiceClient } from "@/lib/supabase";
 import { redirect } from "next/navigation";
 import MonthSelector from "./MonthSelector";
+import QuickActions from "./QuickActions";
 
 // Any @arcusquantfund.com address can access the admin panel
 const ADMIN_DOMAIN = "@arcusquantfund.com";
@@ -441,7 +442,7 @@ export default async function AdminPage({
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-900/60 border-b border-gray-700">
-                  {["Client", "Month Opening", "Current Equity", "MTD Deposits", "MTD P&L", "MTD %", "Bot"].map(h => (
+                  {["Client", "Month Opening", "Current Equity", "Capital Flows", "MTD P&L", "MTD %", "Bot"].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-gray-500 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -453,11 +454,18 @@ export default async function AdminPage({
                     <td className="px-4 py-3 text-gray-400 text-sm font-mono">{fmt(row.opening)}</td>
                     <td className="px-4 py-3 text-white text-sm font-bold font-mono">{fmt(row.currentEquity)}</td>
                     <td className="px-4 py-3 text-sm">
-                      {row.depositsThisMonth > 0
-                        ? <span className="text-blue-400 font-mono">+{fmt(row.depositsThisMonth)}</span>
-                        : row.withdrawalsThisMonth > 0
-                        ? <span className="text-orange-400 font-mono">−{fmt(row.withdrawalsThisMonth)}</span>
-                        : <span className="text-gray-600">—</span>}
+                      {row.depositsThisMonth === 0 && row.withdrawalsThisMonth === 0 ? (
+                        <span className="text-gray-600">—</span>
+                      ) : (
+                        <div className="space-y-0.5">
+                          {row.depositsThisMonth > 0 && (
+                            <div className="text-blue-400 font-mono text-xs">+{fmt(row.depositsThisMonth)}</div>
+                          )}
+                          {row.withdrawalsThisMonth > 0 && (
+                            <div className="text-orange-400 font-mono text-xs">−{fmt(row.withdrawalsThisMonth)}</div>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className={`px-4 py-3 text-sm font-bold font-mono ${pnlCls(row.mtdPnl)}`}>
                       {fmtSigned(row.mtdPnl)}
@@ -803,50 +811,7 @@ export default async function AdminPage({
           <h2 className="text-yellow-400 text-xs font-bold tracking-widest uppercase mb-4">
             Quick Actions
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              {
-                label: "Trigger Monthly Report",
-                desc:  "Send emails to all clients",
-                href:  `/api/cron/monthly-report`,
-                cls:   "border-yellow-500/30 hover:border-yellow-500/60 hover:bg-yellow-500/5",
-                icon:  "📧",
-              },
-              {
-                label: "Trigger Daily Snapshot",
-                desc:  "Force balance + rate capture",
-                href:  `/api/cron/daily-snapshot`,
-                cls:   "border-blue-500/30 hover:border-blue-500/60 hover:bg-blue-500/5",
-                icon:  "📸",
-              },
-              {
-                label: "Record Capital Event",
-                desc:  "Log deposit / withdrawal",
-                href:  `/api/admin/capital-event`,
-                cls:   "border-green-500/30 hover:border-green-500/60 hover:bg-green-500/5",
-                icon:  "💸",
-              },
-              {
-                label: "Mark Fee Paid",
-                desc:  "Confirm performance fee received",
-                href:  `/api/admin/fee-paid`,
-                cls:   "border-purple-500/30 hover:border-purple-500/60 hover:bg-purple-500/5",
-                icon:  "✅",
-              },
-            ].map((action) => (
-              <a
-                key={action.label}
-                href={action.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`block border rounded-xl p-4 transition-all cursor-pointer ${action.cls}`}
-              >
-                <div className="text-2xl mb-2">{action.icon}</div>
-                <div className="text-white text-sm font-semibold">{action.label}</div>
-                <div className="text-gray-600 text-xs mt-0.5">{action.desc}</div>
-              </a>
-            ))}
-          </div>
+          <QuickActions />
         </div>
 
         {/* ══ ALL-TIME FEE TRACKER ══ */}

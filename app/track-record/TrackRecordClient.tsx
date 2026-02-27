@@ -27,6 +27,7 @@ type Trade = {
   pnl: number;
   pnl_percent: number;
   reason: string;
+  trade_id: string | null;
 };
 
 type ChartTrade = {
@@ -36,16 +37,6 @@ type ChartTrade = {
   price: number;
   pnl: number | null;
   amount: number | null;
-};
-
-type KeyEvent = {
-  event_date: string;
-  event_type: string;
-  headline: string;
-  body: string;
-  trade_pct: number;
-  equity_level: number;
-  color: string;
 };
 
 // Editorial context notes by date (YYYY-MM-DD) — market event annotations
@@ -76,13 +67,11 @@ export default function TrackRecordClient({
   stats,
   trades,
   allTrades,
-  keyEvents,
   periodTWR,
 }: {
   stats: PerfStats;
   trades: Trade[];
   allTrades: ChartTrade[];
-  keyEvents: KeyEvent[];
   periodTWR: number;
 }) {
   // Build equity curve from live trade data
@@ -90,12 +79,17 @@ export default function TrackRecordClient({
   const enrichedTrades = trades.map((t) => {
     equity = equity * (1 + t.pnl_percent / 100);
     const dateKey = t.timestamp.slice(0, 10);
+    // Strip "bnb_" prefix to expose the raw Binance order ID for verification
+    const orderId = t.trade_id?.startsWith("bnb_")
+      ? t.trade_id.slice(4)
+      : (t.trade_id ?? null);
     return {
       ...t,
       equity: Math.round(equity * 10000) / 10000,
       date: formatDate(t.timestamp),
       dateKey,
       note: TRADE_NOTES[dateKey] ?? "",
+      orderId,
     };
   });
 
@@ -277,6 +271,7 @@ export default function TrackRecordClient({
                 <span className="text-gray-600 text-xs w-16 text-right">Price %</span>
                 <span className="text-gray-600 text-xs w-20 text-right">Margin %</span>
                 <span className="text-gray-600 text-xs w-14 text-right">Equity</span>
+                <span className="text-gray-600 text-xs w-28 text-right">Order ID</span>
               </div>
             </div>
             <div className="space-y-1">
@@ -318,6 +313,19 @@ export default function TrackRecordClient({
                     <span className="text-gray-500 text-xs w-14 text-right">
                       {t.equity.toFixed(1)}
                     </span>
+                    <span className="text-gray-600 text-[10px] w-28 text-right font-mono truncate" title={t.orderId ?? ""}>
+                      {t.orderId
+                        ? <a
+                            href={`https://www.binance.com/en/my/orders/exchange/tradeorder`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-gray-400 transition-colors"
+                            title={`Binance Order ID: ${t.orderId}`}
+                          >
+                            #{t.orderId.slice(-8)}
+                          </a>
+                        : <span className="text-gray-700">—</span>}
+                    </span>
                   </div>
                 </div>
                 );
@@ -335,71 +343,6 @@ export default function TrackRecordClient({
             </div>
           </div>
         )}
-
-        {/* Key events — auto-populated from live trade data */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-10">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-white font-bold text-lg">Key Events</h2>
-            <span className="text-gray-600 text-xs">Auto-detected from live trade data</span>
-          </div>
-          {keyEvents.length > 0 ? (
-            <div className="space-y-5">
-              {keyEvents.map((e, i) => (
-                <div key={i} className={`border-l-2 pl-5 ${
-                  e.color === "gold" ? "border-gold/50" : "border-red-500/40"
-                }`}>
-                  <div className="text-gray-500 text-xs mb-1">{e.event_date}</div>
-                  <div className="text-white font-semibold text-sm mb-1">{e.headline}</div>
-                  <div className="text-gray-400 text-sm leading-relaxed">{e.body}</div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            // Fallback hardcoded context until Supabase key_events table is populated
-            <div className="space-y-5">
-              {[
-                {
-                  period: "Oct 10–14, 2025",
-                  headline: "Largest liquidation event in crypto history",
-                  body: "XRP flash-crashed 40% in hours. $16B liquidated across crypto markets. The bot took its worst loss (−17.41%) and re-entered three days later. Four consecutive wins followed.",
-                  color: "red",
-                },
-                {
-                  period: "Nov 24, 2025",
-                  headline: "Major win: +31.2%",
-                  body: "XRP recovered fully from the October crash. Bot rode the full November rally.",
-                  color: "gold",
-                },
-                {
-                  period: "Jan 3–5, 2026",
-                  headline: "XRP rally — two wins in two days",
-                  body: "+9.58% on Jan 3, +31.7% on Jan 5. XRP surged on improved regulatory outlook.",
-                  color: "gold",
-                },
-                {
-                  period: "Jan–Feb 2026",
-                  headline: "4 consecutive losses",
-                  body: "Broad crypto selloff. Bot logged 4 losses in a row before the reversal.",
-                  color: "red",
-                },
-                {
-                  period: "Feb 6 & 15, 2026",
-                  headline: "Recovery: +42.1% and +31.7%",
-                  body: "Post-selloff reversal. Largest single trade of the period on Feb 6.",
-                  color: "gold",
-                },
-              ].map((e) => (
-                <div key={e.period} className={`border-l-2 pl-5 ${
-                  e.color === "gold" ? "border-gold/50" : "border-red-500/40"
-                }`}>
-                  <div className="text-gray-500 text-xs mb-1">{e.period}</div>
-                  <div className="text-white font-semibold text-sm mb-1">{e.headline}</div>
-                  <div className="text-gray-400 text-sm leading-relaxed">{e.body}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
         {/* Strategy history timeline */}
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-10">
