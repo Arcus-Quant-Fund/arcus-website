@@ -23,11 +23,29 @@ export default function DAppPage() {
           <p className="text-xl text-gray-300 font-medium mb-5">
             The world&apos;s first Shariah-compliant perpetual futures protocol.
           </p>
-          <p className="text-gray-400 text-lg max-w-2xl leading-relaxed">
+          <p className="text-gray-400 text-lg max-w-2xl leading-relaxed mb-8">
             Premium-only funding. Zero interest by design. Mathematically proven spot convergence.
             Built for the 1.8 billion Muslims and $3 trillion Islamic finance industry that today
             has no access to perpetual futures markets.
           </p>
+          <div className="flex flex-wrap gap-4">
+            <a
+              href="https://baraka.arcusquantfund.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
+            >
+              Launch Trading App <ExternalLink size={16} />
+            </a>
+            <a
+              href="https://baraka.arcusquantfund.com/transparency"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-8 py-4 border border-gray-700 hover:border-gold/50 text-gray-300 hover:text-white font-semibold rounded-xl transition-colors"
+            >
+              View Proof <ArrowRight size={16} />
+            </a>
+          </div>
         </div>
 
         {/* Three pillars */}
@@ -241,10 +259,14 @@ export default function DAppPage() {
                 label: "Foundation",
                 done: true,
                 items: [
-                  "8 smart contracts deployed + verified on Arbitrum Sepolia",
-                  "60/60 tests passing (unit + integration + fuzz)",
-                  "Economic simulation: cadCAD + RL + game theory + mechanism design",
-                  "Research paper: Ahmed, Bhuyan & Islam (2026) — ι=0 proof",
+                  "9 smart contracts deployed + verified on Arbitrum Sepolia (incl. BRKX token + v2 PM)",
+                  "78/78 tests passing (unit + integration + fee + fuzz, 1000 runs each) · Slither: 0 HIGH, 0 MEDIUM",
+                  "Integrated 4-layer simulation: cadCAD + RL + Game Theory + Mechanism Design · 0/5 insolvency",
+                  "3 academic papers: ι=0 perpetuals · credit equivalence · IES simulation framework (Ahmed, Bhuyan & Islam 2026)",
+                  "BRKX governance token: hold-based fee tiers (5→2.5 bps), 100M supply, ERC20Votes+Permit",
+                  "Trading frontend live — baraka.arcusquantfund.com",
+                  "The Graph subgraph live — all events indexed on Arbitrum Sepolia",
+                  "Full codebase public on GitHub — github.com/Arcus-Quant-Fund/BarakaDapp",
                 ],
               },
               {
@@ -318,13 +340,26 @@ export default function DAppPage() {
               <p className="text-gray-400 text-sm leading-relaxed mb-3">
                 Baraka is the implementation layer of published academic research. The theoretical
                 foundation — spot convergence at ι=0 — is from Ackerer, Hugonnier & Jermann (2024)
-                in <em>Mathematical Finance</em>. The Islamic finance application is from Ahmed, Bhuyan & Islam (2026),
-                which provides the first systematic taxonomy of perpetual futures funding formulas
-                under Shariah law.
+                in <em>Mathematical Finance</em>. Our own research programme has produced three papers
+                validating the protocol from complementary angles.
               </p>
+              <div className="space-y-2 mb-3">
+                {[
+                  { n: "Paper I", title: "Shariah-Compliant Perpetual Futures: ι=0 as the No-Riba Condition", desc: "First taxonomy of all existing perpetual funding formulas under riba / gharar / maysir. Proves ι=0 is the unique compliant parameterisation." },
+                  { n: "Paper II", title: "Random Stopping Time Equivalence and the κ-Rate in Islamic Finance", desc: "Shows Ackerer's random stopping time θ_t is mathematically equivalent to a credit event τ, replacing r with κ (no-riba convergence intensity). Foundation for sukuk, takaful, and iCDS." },
+                  { n: "Paper III", title: "Simulating Full Islamic Economic Systems: IES Framework", desc: "cadCAD + RL + Game Theory + Mechanism Design integrated simulation. 5 episodes × 720 steps. 0% insolvency. ι=0 Nash equilibrium proven empirically." },
+                ].map((p) => (
+                  <div key={p.n} className="bg-gray-800/40 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-gold text-xs font-mono font-semibold">{p.n}</span>
+                      <span className="text-white text-xs font-medium">{p.title}</span>
+                    </div>
+                    <p className="text-gray-500 text-xs leading-relaxed">{p.desc}</p>
+                  </div>
+                ))}
+              </div>
               <p className="text-gray-400 text-sm leading-relaxed">
-                The paper provides the academic legitimacy. Baraka provides the implementation.
-                Together: <span className="text-white font-medium">proof → product.</span>
+                Three papers. Three validation layers. <span className="text-white font-medium">Proof → simulation → product.</span>
               </p>
             </div>
           </div>
@@ -353,7 +388,7 @@ export default function DAppPage() {
             </div>
             <div>
               <h2 className="text-white font-bold text-xl">Live on Arbitrum Sepolia</h2>
-              <p className="text-gray-500 text-xs">Deployed 25 Feb 2026 · All 8 contracts verified on Arbiscan</p>
+              <p className="text-gray-500 text-xs">Deployed Feb 2026 · All 9 contracts verified on Arbiscan · <a href="https://github.com/Arcus-Quant-Fund/BarakaDapp" target="_blank" rel="noopener noreferrer" className="underline hover:text-green-400 transition-colors">View Source ↗</a></p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-5">
@@ -364,8 +399,9 @@ export default function DAppPage() {
               { name: "InsuranceFund",     addr: "0x7B440af63D5fa5592E53310ce914A21513C1a716" },
               { name: "CollateralVault",   addr: "0x5530e4670523cFd1A60dEFbB123f51ae6cae0c5E" },
               { name: "LiquidationEngine", addr: "0x456eBE7BbCb099E75986307E4105A652c108b608" },
-              { name: "PositionManager",   addr: "0x53E3063FE2194c2DAe30C36420A01A8573B150bC" },
+              { name: "PositionManager v2", addr: "0x787E15807f32f84aC3D929CB136216897b788070" },
               { name: "GovernanceModule",  addr: "0x8c987818dffcD00c000Fe161BFbbD414B0529341" },
+              { name: "BRKXToken",         addr: "0xD3f7E29cAC5b618fAB44Dd8a64C4CC335C154A32" },
             ].map((c) => (
               <a
                 key={c.name}
@@ -436,8 +472,8 @@ export default function DAppPage() {
                 title: "Reinforcement Learning",
                 badge: "Agent Modelling",
                 badgeColor: "amber",
-                result: "PPO agent · 5× leverage optimal",
-                desc: "A Proximal Policy Optimisation agent learns to trade within Baraka's constraints. Trained agents converge to lower leverage during high-funding periods — consistent with rational carry-trade theory.",
+                result: "PPO agent · Nash leverage 2.72× / 3.28×",
+                desc: "A Proximal Policy Optimisation agent learns to trade within Baraka's constraints. Trained agents converge to sub-maximal leverage (2.72× long / 3.28× short) well inside the 5× Shariah cap.",
               },
               {
                 title: "Stress Tests",
@@ -445,6 +481,13 @@ export default function DAppPage() {
                 badgeColor: "red",
                 result: "Protocol survives all scenarios",
                 desc: "Flash crash (−40%), 48h max funding spiral, oracle attack (+20% mark), 60-day bear market, cascade liquidation. Insurance fund survives all. ι=0 never violated in any scenario.",
+              },
+              {
+                title: "Integrated IES",
+                badge: "4-Layer Closed Loop",
+                badgeColor: "green",
+                result: "5 episodes · 0/5 insolvency · MD converged",
+                desc: "All four layers running simultaneously: cadCAD state machine feeds RL agent every step, Game Theory solves Nash every 50 steps, Mechanism Design re-optimises parameters at episode boundary. ι=0 net transfer ≈ $0 across all 3,600 simulation steps.",
               },
             ].map((s) => (
               <div key={s.title} className="bg-gray-800/60 border border-gray-700/50 rounded-xl p-5">
@@ -454,6 +497,7 @@ export default function DAppPage() {
                     s.badgeColor === "purple" ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
                     : s.badgeColor === "blue"   ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
                     : s.badgeColor === "amber"  ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                    : s.badgeColor === "green"  ? "bg-green-500/10 text-green-400 border-green-500/20"
                     : "bg-red-500/10 text-red-400 border-red-500/20"
                   }`}>
                     {s.badge}
@@ -494,17 +538,27 @@ export default function DAppPage() {
 
         {/* CTA */}
         <div className="bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center mb-16">
-          <h3 className="text-2xl font-bold text-white mb-3">Follow the Build</h3>
+          <h3 className="text-2xl font-bold text-white mb-3">Ready to Trade — Testnet Live</h3>
           <p className="text-gray-400 mb-6 max-w-md mx-auto">
-            Baraka is in active development. If you are an Islamic finance institution,
-            Shariah scholar, DeFi developer, or accredited investor — we want to hear from you.
+            Try the world&apos;s first Shariah-compliant perpetual futures interface on Arbitrum Sepolia.
+            No real funds needed — connect your wallet and explore.
           </p>
-          <Link
-            href="/contact"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
-          >
-            Get in Touch <ArrowRight size={18} />
-          </Link>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <a
+              href="https://baraka.arcusquantfund.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
+            >
+              Launch Trading App <ExternalLink size={18} />
+            </a>
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 px-8 py-4 border border-gold/30 hover:border-gold text-gold font-semibold rounded-xl transition-colors"
+            >
+              Get in Touch <ArrowRight size={18} />
+            </Link>
+          </div>
         </div>
 
       </div>
