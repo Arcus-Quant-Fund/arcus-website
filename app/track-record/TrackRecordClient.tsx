@@ -77,11 +77,13 @@ export default function TrackRecordClient({
   trades,
   allTrades,
   keyEvents,
+  periodTWR,
 }: {
   stats: PerfStats;
   trades: Trade[];
   allTrades: ChartTrade[];
   keyEvents: KeyEvent[];
+  periodTWR: number;
 }) {
   // Build equity curve from live trade data
   let equity = 100;
@@ -148,9 +150,9 @@ export default function TrackRecordClient({
         {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
-            <div className="text-2xl font-bold text-gold mb-1">+{(lastEquity - 100).toFixed(1)}%</div>
-            <div className="text-white text-sm font-medium mb-0.5">Compound Return</div>
-            <div className="text-gray-500 text-xs">On own capital · Sep 2025</div>
+            <div className="text-2xl font-bold text-gold mb-1">{periodTWR >= 0 ? "+" : ""}{periodTWR.toFixed(1)}%</div>
+            <div className="text-white text-sm font-medium mb-0.5">Compound Return (TWR)</div>
+            <div className="text-gray-500 text-xs">Monthly compounded · Sep 2025</div>
           </div>
 
           {[
