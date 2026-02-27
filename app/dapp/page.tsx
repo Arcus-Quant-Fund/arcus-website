@@ -349,7 +349,7 @@ export default function DAppPage() {
                 {[
                   { n: "Paper I", title: "Shariah-Compliant Perpetual Futures: ι=0 as the No-Riba Condition", desc: "First taxonomy of all existing perpetual funding formulas under riba / gharar / maysir. Proves ι=0 is the unique compliant parameterisation." },
                   { n: "Paper II", title: "Random Stopping Time Equivalence and the κ-Rate in Islamic Finance", desc: "Shows Ackerer's random stopping time θ_t is mathematically equivalent to a credit event τ, replacing r with κ (no-riba convergence intensity). Foundation for sukuk, takaful, and iCDS." },
-                  { n: "Paper III", title: "Simulating Full Islamic Economic Systems: IES Framework", desc: "cadCAD + RL + Game Theory + Mechanism Design integrated simulation. 5 episodes × 720 steps. 0% insolvency. ι=0 Nash equilibrium proven empirically." },
+                  { n: "Paper III", title: "The κ-Rate: A Riba-Free Monetary Alternative Derived from Perpetual Contract Theory", desc: "Proposes κ (the convergence intensity of perpetual contracts) as the first rigorous, observable, riba-free alternative to the interest rate r. Constructs the κ-yield curve κ(T) = 1/T as the Islamic analog of CIR. Applications: sukuk benchmark, takaful pricing, Islamic monetary policy. Baraka Protocol provides real-time on-chain κ." },
                 ].map((p) => (
                   <div key={p.n} className="bg-gray-800/40 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-1">
