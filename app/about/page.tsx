@@ -53,32 +53,61 @@ export default function AboutPage() {
               </div>
             </div>
 
-            {/* Dr. Bhuyan — commented out pending permission
+            {/* Dr. Bhuyan */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
               <div className="flex items-start gap-6">
                 <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-2xl font-bold text-gold">
                   RB
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-1">Dr. Rafiqul Bhuyan</h2>
-                  <p className="text-gold text-sm font-medium mb-4">Co-Founder & Strategic Advisor · Academic Finance</p>
+                  <h2 className="text-2xl font-bold text-white mb-1">Dr. Rafiq Bhuyan</h2>
+                  <p className="text-gold text-sm font-medium mb-4">Co-Founder &amp; Strategic Advisor · Academic Finance</p>
+
+                  {/* Titles & Affiliations */}
                   <p className="text-gray-400 leading-relaxed mb-4">
-                    Associate Professor of Finance & Economics at A&M University Alabama and Adjunct Professor
-                    at Independent University Bangladesh. PhD in Economics, Concordia University (Montreal).
-                    MS Finance, University of Illinois. Author of 80+ peer-reviewed journal articles in
-                    finance, economics, and entrepreneurship. Fulbright Scholar. Twice recipient of
-                    the Outstanding Researcher Award, California State University.
+                    Adjunct Professor of Economics and Finance at{" "}
+                    <span className="text-white">Monarch Business School Switzerland</span>{" "}
+                    and, concurrently, Associate Professor at{" "}
+                    <span className="text-white">Alabama A&amp;M University, USA</span>.
                   </p>
+
+                  {/* Education */}
+                  <p className="text-gray-400 leading-relaxed mb-4">
+                    <span className="text-white font-medium">Education:</span>{" "}
+                    PhD in Economics, Concordia University (Montreal, Canada) ·
+                    MS in Finance, University of Illinois ·
+                    Master &amp; Bachelor of Commerce, University of Dhaka, Bangladesh.
+                  </p>
+
+                  {/* Research */}
+                  <p className="text-gray-400 leading-relaxed mb-4">
+                    <span className="text-white font-medium">Research:</span>{" "}
+                    Author of 80+ peer-reviewed journal articles in finance, economics,
+                    entrepreneurship finance, micro-finance, and financial accounting.
+                    Fulbright Scholar. Twice recipient of the{" "}
+                    <span className="text-white">Outstanding Researcher Award</span> from California State University.
+                  </p>
+
+                  {/* Academic career */}
+                  <p className="text-gray-400 leading-relaxed mb-4">
+                    <span className="text-white font-medium">Academic career:</span>{" "}
+                    Former full-time positions as{" "}
+                    <span className="text-white">Purcell Chair Professor</span> at Le Moyne College (New York),
+                    the American University in Kuwait, and California State University.
+                    Former adjunct positions at UC Riverside, Northeastern University,
+                    the University of Southern California, and UC Davis.
+                  </p>
+
+                  {/* Fund role */}
                   <p className="text-gray-400 leading-relaxed">
-                    Brings decades of academic research, institutional finance expertise, and private fund
-                    management experience to the venture. Former Purcell Chair Professor at Le Moyne College
-                    (New York) and faculty at USC, UC Davis, UC Riverside, Northeastern University, and
-                    the American University of Kuwait.
+                    Extensive live trading experience in stocks and options while managing a private fund.
+                    Brings institutional academic credibility, a global research network, and traditional
+                    finance infrastructure expertise to Arcus — leading the fund&apos;s Dubai and US LLC
+                    formation.
                   </p>
                 </div>
               </div>
             </div>
-            */}
 
             {/* Jahidul */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
@@ -110,9 +139,8 @@ export default function AboutPage() {
               title: "18+ Months Live",
               desc: "Real capital deployed in live markets — not just backtests.",
             },
-            // Commented out pending Dr. Bhuyan permission
-            // { icon: <BookOpen className="text-gold" size={20} />, title: "80+ Research Papers", desc: "Co-founder's published academic output in finance and economics." },
-            // { icon: <Award className="text-gold" size={20} />, title: "Fulbright Scholar", desc: "Academic credentials that back every strategy we deploy." },
+            { icon: <BookOpen className="text-gold" size={20} />, title: "80+ Research Papers", desc: "Strategic Advisor's published academic output in finance and economics." },
+            { icon: <Award className="text-gold" size={20} />, title: "Fulbright Scholar", desc: "Academic credentials and institutional finance experience behind every strategy." },
           ].map((c) => (
             <div key={c.title} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
               <div className="mb-3">{c.icon}</div>
