@@ -150,7 +150,7 @@ export default function DAppPage() {
               {
                 name: "OracleAdapter",
                 badge: "Price",
-                desc: "Weighted median of Chainlink (40%), Pyth (40%), Redstone (20%). Requires 2-of-3 agreement within 0.5% tolerance. 30-minute TWAP prevents flash manipulation.",
+                desc: "Dual Chainlink feeds (60/40 weighted), 0.5% deviation tolerance, 30-min TWAP, ±20% circuit breaker. Exposes getKappaSignal(): live κ-convergence rate, premium, and 4-tier risk regime (NORMAL / ELEVATED / HIGH / CRITICAL). KappaAlert emitted on-chain when basis enters HIGH or CRITICAL.",
               },
               {
                 name: "PositionManager",
@@ -260,7 +260,8 @@ export default function DAppPage() {
                 done: true,
                 items: [
                   "9 smart contracts deployed + verified on Arbitrum Sepolia (incl. BRKX token + v2 PM)",
-                  "78/78 tests passing (unit + integration + fee + fuzz, 1000 runs each) · Slither: 0 HIGH, 0 MEDIUM",
+                  "93/93 tests passing (unit + integration + fee + kappa + fuzz, 1000 runs each) · Slither: 0 HIGH, 0 MEDIUM",
+                  "κ-convergence risk signal live: OracleAdapter.getKappaSignal() · 4-tier regime (NORMAL/ELEVATED/HIGH/CRITICAL) · KappaAlert event",
                   "Integrated 4-layer simulation: cadCAD + RL + Game Theory + Mechanism Design · 0/5 insolvency",
                   "3 academic papers: ι=0 perpetuals · credit equivalence · IES simulation framework (Ahmed, Bhuyan & Islam 2026)",
                   "BRKX governance token: hold-based fee tiers (5→2.5 bps), 100M supply, ERC20Votes+Permit",
