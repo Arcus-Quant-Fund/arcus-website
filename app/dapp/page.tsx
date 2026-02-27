@@ -259,7 +259,8 @@ export default function DAppPage() {
                 label: "Foundation",
                 done: true,
                 items: [
-                  "9 smart contracts deployed + verified on Arbitrum Sepolia (incl. BRKX token + v2 PM)",
+                  "9 contracts deployed + verified · v2/v3 redeployed Feb 27 (OracleAdapter v2, CollateralVault v2, LiquidationEngine v2, PositionManager v3)",
+                  "On-chain smoke test verified: BRKX tier3 fee split (375k/375k tUSDC-wei each leg), κ-regime=0 · all 6 assertions pass · ONCHAIN EXECUTION COMPLETE",
                   "93/93 tests passing (unit + integration + fee + kappa + fuzz, 1000 runs each) · Slither: 0 HIGH, 0 MEDIUM",
                   "κ-convergence risk signal live: OracleAdapter.getKappaSignal() · 4-tier regime (NORMAL/ELEVATED/HIGH/CRITICAL) · KappaAlert event",
                   "Integrated 4-layer simulation: cadCAD + RL + Game Theory + Mechanism Design · 0/5 insolvency",
@@ -389,18 +390,18 @@ export default function DAppPage() {
             </div>
             <div>
               <h2 className="text-white font-bold text-xl">Live on Arbitrum Sepolia</h2>
-              <p className="text-gray-500 text-xs">Deployed Feb 2026 · All 9 contracts verified on Arbiscan · <a href="https://github.com/Arcus-Quant-Fund/BarakaDapp" target="_blank" rel="noopener noreferrer" className="underline hover:text-green-400 transition-colors">View Source ↗</a></p>
+              <p className="text-gray-500 text-xs">Deployed Feb 2026 · v2/v3 redeployed Feb 27 2026 · All 9 contracts verified on Arbiscan · <a href="https://github.com/Arcus-Quant-Fund/BarakaDapp" target="_blank" rel="noopener noreferrer" className="underline hover:text-green-400 transition-colors">View Source ↗</a></p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-5">
             {[
-              { name: "OracleAdapter",     addr: "0xB8d9778288B96ee5a9d873F222923C0671fc38D4" },
+              { name: "OracleAdapter v2",   addr: "0x86C475d9943ABC61870C6F19A7e743B134e1b563" },
               { name: "ShariahGuard",      addr: "0x26d4db76a95DBf945ac14127a23Cd4861DA42e69" },
               { name: "FundingEngine",     addr: "0x459BE882BC8736e92AA4589D1b143e775b114b38" },
               { name: "InsuranceFund",     addr: "0x7B440af63D5fa5592E53310ce914A21513C1a716" },
-              { name: "CollateralVault",   addr: "0x5530e4670523cFd1A60dEFbB123f51ae6cae0c5E" },
-              { name: "LiquidationEngine", addr: "0x456eBE7BbCb099E75986307E4105A652c108b608" },
-              { name: "PositionManager v2", addr: "0x787E15807f32f84aC3D929CB136216897b788070" },
+              { name: "CollateralVault v2", addr: "0x0e9e32e4e061Db57eE5d3309A986423A5ad3227E" },
+              { name: "LiquidationEngine v2", addr: "0x17D9399C7e17690bE23544E379907eC1AB6b7E07" },
+              { name: "PositionManager v3", addr: "0x035E38fd8b34486530A4Cd60cE9D840e1a0A124a" },
               { name: "GovernanceModule",  addr: "0x8c987818dffcD00c000Fe161BFbbD414B0529341" },
               { name: "BRKXToken",         addr: "0xD3f7E29cAC5b618fAB44Dd8a64C4CC335C154A32" },
             ].map((c) => (
