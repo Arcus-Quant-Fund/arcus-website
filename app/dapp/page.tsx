@@ -263,8 +263,9 @@ export default function DAppPage() {
                   "On-chain smoke test verified: BRKX tier3 fee split (375k/375k tUSDC-wei each leg), κ-regime=0 · all 6 assertions pass · ONCHAIN EXECUTION COMPLETE",
                   "93/93 tests passing (unit + integration + fee + kappa + fuzz, 1000 runs each) · Slither: 0 HIGH, 0 MEDIUM",
                   "κ-convergence risk signal live: OracleAdapter.getKappaSignal() · 4-tier regime (NORMAL/ELEVATED/HIGH/CRITICAL) · KappaAlert event",
+                  "BRKX fee tier display live in OrderPanel: useBrkxTier hook (hold-based tier badge, fee estimate row, next-tier upgrade indicator) · useKappaSignal hook (regime colour badge)",
                   "Integrated 4-layer simulation: cadCAD + RL + Game Theory + Mechanism Design · 0/5 insolvency",
-                  "3 academic papers: ι=0 perpetuals · credit equivalence · IES simulation framework (Ahmed, Bhuyan & Islam 2026)",
+                  "3 academic papers: ι=0 perpetuals · credit equivalence · κ-Rate monetary alternative + Appendix A (stochastic κ CIR-type SDE, closed-form κ-bond pricing) — Ahmed, Bhuyan & Islam 2026",
                   "BRKX governance token: hold-based fee tiers (5→2.5 bps), 100M supply, ERC20Votes+Permit",
                   "Trading frontend live — baraka.arcusquantfund.com",
                   "The Graph subgraph live — all events indexed on Arbitrum Sepolia",
@@ -349,7 +350,7 @@ export default function DAppPage() {
                 {[
                   { n: "Paper I", title: "Shariah-Compliant Perpetual Futures: ι=0 as the No-Riba Condition", desc: "First taxonomy of all existing perpetual funding formulas under riba / gharar / maysir. Proves ι=0 is the unique compliant parameterisation." },
                   { n: "Paper II", title: "Random Stopping Time Equivalence and the κ-Rate in Islamic Finance", desc: "Shows Ackerer's random stopping time θ_t is mathematically equivalent to a credit event τ, replacing r with κ (no-riba convergence intensity). Foundation for sukuk, takaful, and iCDS." },
-                  { n: "Paper III", title: "The κ-Rate: A Riba-Free Monetary Alternative Derived from Perpetual Contract Theory", desc: "Proposes κ (the convergence intensity of perpetual contracts) as the first rigorous, observable, riba-free alternative to the interest rate r. Constructs the κ-yield curve κ(T) = 1/T as the Islamic analog of CIR. Applications: sukuk benchmark, takaful pricing, Islamic monetary policy. Baraka Protocol provides real-time on-chain κ." },
+                  { n: "Paper III", title: "The κ-Rate: A Riba-Free Monetary Alternative Derived from Perpetual Contract Theory", desc: "Proposes κ as the first rigorous, observable, riba-free alternative to r (Wicksell's natural rate minus riba). Constructs the κ-yield curve κ(T) = 1/T — the Islamic analog of CIR. Appendix A: stochastic κ dynamics — CIR-κ SDE (dκ = α(κ̄−κ)dt + σ√κ dW), closed-form κ-bond pricing (Riccati ODEs), stochastic yield curve (normal/inverted/flat regimes). Applications: sukuk benchmark, takaful pricing, Islamic monetary policy signalling." },
                 ].map((p) => (
                   <div key={p.n} className="bg-gray-800/40 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-1">
