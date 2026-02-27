@@ -110,23 +110,35 @@ function pnlClass(val: number | null | undefined) {
 function calcMargin(botState: NonNullable<BotState>, currentPrice: number) {
   if (botState.position !== "long" || !botState.entry_price || !botState.current_quantity) return null;
   const { entry_price: entry, current_quantity: qty, leverage } = botState;
-  const maintenance = 0.04;
-  const positionValue = qty * currentPrice;
-  const liqPrice = entry * (1 - 1 / leverage + maintenance);
+  const positionValue  = qty * currentPrice;
+  const unrealizedPnl  = (currentPrice - entry) * qty;
+
+  // Prefer real Binance values from DB (set by sync_to_supabase.py from Binance API).
+  // Fall back to formula estimates only when DB columns are null.
+  const liqPrice  = botState.liq_price ?? entry * (1 - 1 / leverage + 0.04);
   const distToLiq = ((currentPrice - liqPrice) / currentPrice) * 100;
-  const requiredMargin = positionValue / leverage;
-  const marginRatio = ((positionValue - requiredMargin) / positionValue) * 100;
-  const borrowedValue = positionValue - requiredMargin;
-  const unrealizedPnl = (currentPrice - entry) * qty;
-  const marginLevel = borrowedValue > 0 ? positionValue / borrowedValue : Infinity;
-  const marginStatus = marginLevel < 1 ? "HIGH RISK" : marginLevel < 1.3 ? "MODERATE RISK" : "SAFE";
-  const pnlPct = positionValue > 0 ? (unrealizedPnl / positionValue) * 100 * leverage : 0;
+
+  // initialMargin and borrowedAmount are fixed at entry — they don't change with price.
+  const initialMargin  = (entry * qty) / leverage;
+  const borrowedAmount = entry * qty - initialMargin;
+
+  // margin_level = equity / borrowed. equity moves with price, borrowed is fixed.
+  // Previous formula: positionValue / borrowedValue was circular (both scaled with currentPrice → always ~1.4).
+  const calcedMarginLevel = borrowedAmount > 0 ? (initialMargin + unrealizedPnl) / borrowedAmount : Infinity;
+  const marginLevel  = botState.margin_level ?? calcedMarginLevel;
+
+  const marginStatus = marginLevel < 1.1 ? "HIGH RISK" : marginLevel < 1.3 ? "MODERATE RISK" : "SAFE";
+  const pnlPct       = positionValue > 0 ? (unrealizedPnl / positionValue) * 100 * leverage : 0;
+
+  const requiredMargin = positionValue / leverage;  // current margin requirement (for display)
+  const marginRatio    = ((positionValue - requiredMargin) / positionValue) * 100;
+  const borrowedValue  = positionValue - requiredMargin;
   return {
     positionValue, liqPrice, distToLiq, requiredMargin,
     marginRatio, borrowedValue, unrealizedPnl, marginLevel,
     marginStatus, pnlPct,
-    totalAssetValue: positionValue,
-    totalEquityValue: requiredMargin + unrealizedPnl,
+    totalAssetValue:  positionValue,
+    totalEquityValue: initialMargin + unrealizedPnl,
   };
 }
 
@@ -550,11 +562,13 @@ export default function DashboardClient({ session, botState, priceData, trades, 
     totalGrossPnl: number;
     totalFeeOwed: number;
     totalFeePaid: number;
-    endTWR: number;       // cumulative TWR at end of year
-    annualReturn: number; // totalGrossPnl / firstOpening
+    endTWR: number;          // cumulative TWR since inception at year end
+    annualTWRFactor: number; // product of (1 + monthly_return) for months in this year
+    annualReturn: number;    // (annualTWRFactor - 1) * 100 — correct compound annual TWR
   };
   const yearMap = new Map<number, AnnualRow>();
   for (const row of capRows) {
+    const monthFactor = 1 + row.monthlyReturn / 100;
     const existing = yearMap.get(row.year);
     if (!existing) {
       yearMap.set(row.year, {
@@ -567,18 +581,19 @@ export default function DashboardClient({ session, botState, priceData, trades, 
         totalFeeOwed:         row.feeOwed,
         totalFeePaid:         row.feePaid,
         endTWR:               row.cumulativeTWR,
-        annualReturn:         row.opening > 0 ? (row.grossPnl / row.opening) * 100 : 0,
+        annualTWRFactor:      monthFactor,
+        annualReturn:         row.monthlyReturn,
       });
     } else {
-      existing.lastClosing          = row.closing;
-      existing.totalDepositsYear   += row.deposits;
+      existing.lastClosing           = row.closing;
+      existing.totalDepositsYear    += row.deposits;
       existing.totalWithdrawalsYear += row.withdrawals;
-      existing.totalGrossPnl       += row.grossPnl;
-      existing.totalFeeOwed        += row.feeOwed;
-      existing.totalFeePaid        += row.feePaid;
-      existing.endTWR               = row.cumulativeTWR;
-      existing.annualReturn         = existing.firstOpening > 0
-        ? (existing.totalGrossPnl / existing.firstOpening) * 100 : 0;
+      existing.totalGrossPnl        += row.grossPnl;
+      existing.totalFeeOwed         += row.feeOwed;
+      existing.totalFeePaid         += row.feePaid;
+      existing.endTWR                = row.cumulativeTWR;
+      existing.annualTWRFactor      *= monthFactor;
+      existing.annualReturn          = (existing.annualTWRFactor - 1) * 100;
     }
   }
 
