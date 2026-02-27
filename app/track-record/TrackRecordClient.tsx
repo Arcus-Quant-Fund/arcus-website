@@ -150,9 +150,9 @@ export default function TrackRecordClient({
         {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
-            <div className="text-2xl font-bold text-gold mb-1">{periodTWR >= 0 ? "+" : ""}{periodTWR.toFixed(1)}%</div>
-            <div className="text-white text-sm font-medium mb-0.5">Compound Return (TWR)</div>
-            <div className="text-gray-500 text-xs">Monthly compounded · Sep 2025</div>
+            <div className="text-2xl font-bold text-gold mb-1">{(lastEquity - 100) >= 0 ? "+" : ""}{(lastEquity - 100).toFixed(1)}%</div>
+            <div className="text-white text-sm font-medium mb-0.5">Strategy Return</div>
+            <div className="text-gray-500 text-xs">Compounded per-trade · 3.5× margin · Sep 2025</div>
           </div>
 
           {[
@@ -187,7 +187,9 @@ export default function TrackRecordClient({
         {displayTrades && (
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-10">
             <h2 className="text-white font-bold text-lg mb-1">Equity Curve</h2>
-            <p className="text-gray-500 text-sm mb-6">Starting base = 100. Each bar is one closed trade.</p>
+            <p className="text-gray-500 text-sm mb-6">
+              Normalized index starting at 100. Each bar = one closed trade. Height = running compound of per-trade margin returns (3.5× leverage).
+            </p>
             <div className="flex items-end gap-1 h-32">
               {displayTrades.map((t, i) => {
                 const heightPct = (t.equity / (maxEquity * 1.05)) * 100;
@@ -322,9 +324,13 @@ export default function TrackRecordClient({
               })}
             </div>
             <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-800">
-              <span className="text-gray-400 text-sm font-medium">Final equity</span>
+              <div>
+                <div className="text-gray-400 text-sm font-medium">Equity index (base 100)</div>
+                <div className="text-gray-600 text-xs mt-0.5">Compounding all trades since Sep 2025</div>
+              </div>
               <span className="text-green-400 text-lg font-bold">
-                {lastEquity.toFixed(2)} (+{(lastEquity - 100).toFixed(1)}%)
+                {lastEquity.toFixed(2)}{" "}
+                <span className="text-sm text-green-400/70">(+{(lastEquity - 100).toFixed(1)}%)</span>
               </span>
             </div>
           </div>
@@ -468,10 +474,17 @@ export default function TrackRecordClient({
               </div>
             </div>
             <div>
-              <div className="text-gold text-sm font-semibold mb-1">ROI % — return on capital deployed</div>
+              <div className="text-gold text-sm font-semibold mb-1">Margin ROI % — return on capital per trade</div>
               <div className="text-gray-400 text-sm leading-relaxed">
-                <code className="text-gray-300 bg-gray-800 px-1.5 py-0.5 rounded text-xs">ROI% = P&amp;L ÷ Margin × 100</code>
-                <br />Verified against the database on all trades — values match to within 0.05%. Position sizes varied because funds were added and withdrawn during the period.
+                <code className="text-gray-300 bg-gray-800 px-1.5 py-0.5 rounded text-xs">Margin ROI% = P&amp;L ÷ Margin × 100</code>
+                <br />Return on the actual USDT at risk (margin), not the full position size. This is the &quot;Margin %&quot; column in the trade log. The &quot;Price %&quot; column divides by 3.5× to show the unleveraged XRP price move.
+              </div>
+            </div>
+            <div>
+              <div className="text-gold text-sm font-semibold mb-1">Strategy Return (+{(lastEquity - 100).toFixed(1)}%) — how the equity index is built</div>
+              <div className="text-gray-400 text-sm leading-relaxed">
+                <code className="text-gray-300 bg-gray-800 px-1.5 py-0.5 rounded text-xs">index = 100 × ∏(1 + margin_roi_i / 100)</code>
+                <br />A normalized index starting at 100 in Sep 2025. Each trade&apos;s margin return is compounded onto the running total — equivalent to asking &quot;if you had reinvested all margin profits into each subsequent trade, what would $100 have grown to?&quot; Every number comes from the live trade log above. Position sizes in the real account varied; the index assumes full reinvestment.
               </div>
             </div>
             <div>
