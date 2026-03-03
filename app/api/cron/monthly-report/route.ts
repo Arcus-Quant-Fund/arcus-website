@@ -6,6 +6,7 @@ import { createServiceClient } from "@/lib/supabase";
 
 const ARCUS_EMAIL_FROM = "Arcus Quant Fund <admin@arcusquantfund.com>";
 const ARCUS_EMAIL_CC   = "shehzadahmed@arcusquantfund.com";
+const ARCUS_EMAIL_CC2  = "rafiqulbhuyan@gmail.com";
 const ARCUS_SITE       = "https://arcusquantfund.com";
 
 const PAYMENT_BINANCE_UID  = "131952271";
@@ -16,7 +17,7 @@ const PAYMENT_BANK_ACCOUNT = "050 3201 0000 99748";
 const PAYMENT_BANK_ROUTING = "245263286";
 const PAYMENT_BANK_BRANCH  = "Mohammadpur Branch (050)";
 
-const OPERATING_COSTS_USD = 5000; // servers, AI subscriptions, domain, email — per month
+const OPERATING_COSTS_USD = 160; // servers, AI subscriptions, domain, email — per month
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,13 +51,6 @@ type CapitalEvent = {
   amount: number;
   notes: string | null;
   occurred_at: string;
-};
-
-type ExchangeRate = {
-  lower_bound: number;
-  upper_bound: number;
-  mid_rate: number;
-  fetched_at: string;
 };
 
 type MonthStats = {
@@ -113,6 +107,22 @@ function getPreviousMonth() {
   };
 }
 
+// Allow ?year=2026&month=1 to reprocess a specific past month without waiting.
+function getReportPeriod(yearOverride?: number | null, monthOverride?: number | null) {
+  if (yearOverride && monthOverride && monthOverride >= 1 && monthOverride <= 12) {
+    const start = new Date(yearOverride, monthOverride - 1, 1, 0, 0, 0, 0);
+    const end   = new Date(yearOverride, monthOverride,     0, 23, 59, 59, 999);
+    return {
+      year:     yearOverride,
+      month:    monthOverride,
+      label:    start.toLocaleString("en-US", { month: "long", year: "numeric" }),
+      startISO: start.toISOString(),
+      endISO:   end.toISOString(),
+    };
+  }
+  return getPreviousMonth();
+}
+
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
@@ -126,11 +136,6 @@ function fmtSigned(val: number | null | undefined, prefix = "$"): string {
   if (val == null) return "N/A";
   const sign = val >= 0 ? "+" : "−";
   return `${sign}${prefix}${Math.abs(val).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-function fmtFiat(val: number | null | undefined, fiat: string): string {
-  if (val == null) return "N/A";
-  return `${val.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ${fiat}`;
 }
 
 // ─── Stats calculator (capital-adjusted) ─────────────────────────────────────
@@ -221,7 +226,6 @@ function buildEmail(
   stats: MonthStats,
   trades: Trade[],
   capitalEvents: CapitalEvent[],
-  rate: ExchangeRate | null,
   monthLabel: string,
   feePaid: number,
   year: number,
@@ -232,11 +236,6 @@ function buildEmail(
   const red   = "#ef4444";
   const blue  = "#60a5fa";
   const pnlColor = (v: number) => v >= 0 ? green : red;
-
-  const closingFiatLow  = rate ? stats.closing_balance * rate.lower_bound : null;
-  const closingFiatHigh = rate ? stats.closing_balance * rate.upper_bound : null;
-  const feeInFiatLow    = rate ? stats.performance_fee * rate.lower_bound : null;
-  const feeInFiatHigh   = rate ? stats.performance_fee * rate.upper_bound : null;
 
   const roi = stats.opening_balance > 0
     ? (stats.gross_pnl / stats.opening_balance) * 100
@@ -253,6 +252,14 @@ function buildEmail(
   const lastDay      = new Date(year, month, 0);  // day 0 of next month = last day of this month
   const lastDayLabel = lastDay.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
+  // Clean up technical notes from auto-detected transfers before showing to client
+  const cleanNote = (note: string | null): string => {
+    if (!note) return "—";
+    if (note.includes("Auto-detected via Binance transfer")) return "Margin account transfer";
+    if (note.includes("binance_tx_id") || note.includes("txId:")) return "Margin account transfer";
+    return note;
+  };
+
   // ── Capital events rows ──
   const capitalRows = capitalEvents.length > 0 ? capitalEvents.map(e => {
     const isDeposit = e.event_type === "DEPOSIT";
@@ -265,7 +272,7 @@ function buildEmail(
       <td style="padding:9px 10px;font-weight:700;font-size:13px;color:${isDeposit ? green : red};text-align:right;">
         ${isDeposit ? "+" : "−"}${fmtMoney(e.amount)}
       </td>
-      <td style="padding:9px 10px;color:#6b7280;font-size:12px;">${e.notes ?? "—"}</td>
+      <td style="padding:9px 10px;color:#6b7280;font-size:12px;">${cleanNote(e.notes)}</td>
     </tr>`;
   }).join("") : `<tr><td colspan="4" style="padding:14px 10px;color:#4b5563;font-size:12px;">No capital movements this month.</td></tr>`;
 
@@ -294,7 +301,7 @@ function buildEmail(
   <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;background:#0d1a0d;border:1px solid ${green}30;border-radius:12px;overflow:hidden;">
     <tr><td style="padding:20px 24px 0;">
       <div style="color:${green};font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;">
-        Performance Fee — ${(client.profit_share_pct * 100).toFixed(0)}% of Net Profit (per contract)
+        Performance Fee — ${(client.profit_share_pct * 100).toFixed(0)}% of Net Profit (per fund agreement)
       </div>
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
@@ -315,9 +322,6 @@ function buildEmail(
           <td style="padding:10px 0 4px;color:${gold};font-size:20px;font-weight:800;text-align:right;">${fmtMoney(stats.performance_fee)} USDT</td>
         </tr>
       </table>
-      ${rate ? `<div style="color:#6b7280;font-size:12px;margin-bottom:16px;">
-        ≈ ${fmtFiat(feeInFiatLow, client.fiat_currency)} – ${fmtFiat(feeInFiatHigh, client.fiat_currency)} at current P2P rates
-      </div>` : ""}
     </td></tr>
 
     <!-- Payment instructions -->
@@ -354,7 +358,9 @@ function buildEmail(
   </table>` : `
   <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;background:#1a0d0d;border:1px solid ${red}30;border-radius:12px;overflow:hidden;">
     <tr><td style="padding:20px 24px;">
-      <div style="color:${red};font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:14px;">No Performance Fee This Month</div>
+      <div style="color:${red};font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:14px;">
+        ${stats.gross_pnl > 0 ? "Prior Loss Offset — No Fee Due This Month" : "No Performance Fee This Month"}
+      </div>
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
           <td style="padding:7px 0;color:#9ca3af;font-size:13px;">Trading P&L (capital-adjusted)</td>
@@ -362,17 +368,22 @@ function buildEmail(
         </tr>
         ${stats.carried_loss_in > 0 ? `
         <tr>
-          <td style="padding:7px 0;color:#9ca3af;font-size:13px;">Prior Carried Loss</td>
+          <td style="padding:7px 0;color:#9ca3af;font-size:13px;">Less: Prior Carried Loss</td>
           <td style="padding:7px 0;color:${red};font-size:13px;font-weight:600;text-align:right;">−${fmtMoney(stats.carried_loss_in)}</td>
         </tr>` : ""}
         <tr>
-          <td style="padding:10px 0 7px;border-top:1px solid #1f2937;color:#e5e7eb;font-size:14px;font-weight:700;">Carried Forward to Next Month</td>
+          <td style="padding:10px 0 7px;border-top:1px solid #1f2937;color:#e5e7eb;font-size:14px;font-weight:700;">Remaining Loss — Carried Forward</td>
           <td style="padding:10px 0 7px;border-top:1px solid #1f2937;color:${red};font-size:14px;font-weight:700;text-align:right;">−${fmtMoney(stats.carried_loss_out)}</td>
         </tr>
       </table>
       <div style="margin-top:14px;background:#0a0a0a;border-radius:8px;padding:14px;color:#9ca3af;font-size:13px;line-height:1.6;">
-        The loss of <strong style="color:${red};">${fmtMoney(stats.carried_loss_out)}</strong> will be deducted from the first
-        profitable month before any fee is calculated. No payment is due. Your account continues at full capacity.
+        ${stats.gross_pnl > 0
+          ? `Your account gained <strong style="color:#22c55e;">${fmtSigned(stats.gross_pnl)}</strong> this month.
+             After offsetting ${fmtMoney(stats.carried_loss_in)} of prior carried loss, a balance of
+             <strong style="color:${red};">${fmtMoney(stats.carried_loss_out)}</strong> remains to be recovered
+             before the performance fee applies. No payment is due.`
+          : `The loss of <strong style="color:${red};">${fmtMoney(stats.carried_loss_out)}</strong> will be deducted from the first
+        profitable month before any fee is calculated. No payment is due. Your account continues at full capacity.`}
       </div>
     </td></tr>
   </table>`;
@@ -668,35 +679,6 @@ function buildEmail(
     </table>
   </td></tr>
 
-  <!-- EXCHANGE RATES -->
-  ${rate ? `
-  <tr><td style="padding:0 32px 24px;">
-    <div style="color:${gold};font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">
-      USDT → ${client.fiat_currency} &nbsp;<span style="color:#4b5563;font-weight:400;text-transform:none;font-size:10px;">Binance P2P · Bank Transfer · 1,000+ USDT · ${fmtDate(rate.fetched_at)}</span>
-    </div>
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:12px;overflow:hidden;">
-      <tr>
-        <td style="padding:14px 16px;border-right:1px solid #1f2937;">
-          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">P2P Rate Range</div>
-          <div style="color:#fff;font-size:15px;font-weight:700;">
-            ${rate.lower_bound.toLocaleString()} – ${rate.upper_bound.toLocaleString()}
-            <span style="color:#6b7280;font-size:11px;"> ${client.fiat_currency}/USDT</span>
-          </div>
-        </td>
-        <td style="padding:14px 16px;border-right:1px solid #1f2937;">
-          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Your Balance · Lower Rate</div>
-          <div style="color:#9ca3af;font-size:15px;font-weight:700;">${fmtFiat(closingFiatLow, client.fiat_currency)}</div>
-          <div style="color:#4b5563;font-size:11px;">${rate.lower_bound.toLocaleString()} ${client.fiat_currency}/USDT</div>
-        </td>
-        <td style="padding:14px 16px;">
-          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Your Balance · Upper Rate</div>
-          <div style="color:${gold};font-size:15px;font-weight:700;">${fmtFiat(closingFiatHigh, client.fiat_currency)}</div>
-          <div style="color:#4b5563;font-size:11px;">${rate.upper_bound.toLocaleString()} ${client.fiat_currency}/USDT</div>
-        </td>
-      </tr>
-    </table>
-  </td></tr>` : ""}
-
   <!-- CAPITAL MOVEMENTS -->
   <tr><td style="padding:0 32px 24px;">
     <div style="color:${gold};font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Capital Movements — ${monthLabel}</div>
@@ -726,7 +708,7 @@ function buildEmail(
           <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Side</th>
           <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Price</th>
           <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Qty</th>
-          <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Amount</th>
+          <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Trade Value</th>
           <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">P&L</th>
           <th style="padding:9px 8px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Reason</th>
         </tr>
@@ -799,23 +781,26 @@ async function sendArcusAdminReport(
   const red   = "#ef4444";
   const grey  = "#6b7280";
 
-  // Fetch all snapshots for this period
+  // Fetch snapshots for this period — may be empty if no clients have been reported yet
   const { data: snapshots, error } = await supabase
     .from("monthly_snapshots")
     .select("client_id, opening_balance, closing_balance, gross_pnl, performance_fee, fee_paid, total_trades")
     .eq("year", year)
     .eq("month", month);
 
-  if (error || !snapshots || snapshots.length === 0) return;
+  if (error) return; // DB error — abort silently, do not crash the cron
 
-  const snaps = snapshots as MonthlySnapshot[];
+  const snaps = (snapshots ?? []) as MonthlySnapshot[];
 
-  // Build lookup: client_id → client name
-  const clientMap = new Map(clients.map(c => [c.id, c]));
+  // No snapshots for this period yet — nothing finalized to report
+  if (snaps.length === 0) return;
 
-  // Aggregates
-  const totalAUM         = snaps.reduce((s, r) => s + r.closing_balance, 0);
+  // Lookup map
+  const snapByClientId = new Map(snaps.map(s => [s.client_id, s]));
+
+  // Aggregates from finalized snapshots only (no mixing with live bot_state)
   const totalOpeningAUM  = snaps.reduce((s, r) => s + r.opening_balance, 0);
+  const snapshotAUM      = snaps.reduce((s, r) => s + r.closing_balance, 0);
   const totalFeesEarned  = snaps.reduce((s, r) => s + r.performance_fee, 0);
   const totalFeesPaid    = snaps.reduce((s, r) => s + (r.fee_paid ?? 0), 0);
   const totalGrossPnl    = snaps.reduce((s, r) => s + r.gross_pnl, 0);
@@ -826,25 +811,50 @@ async function sendArcusAdminReport(
 
   const pnlColor = (v: number) => v >= 0 ? green : red;
 
-  // ── Per-client rows ──
-  const clientRows = snaps.map(snap => {
-    const c    = clientMap.get(snap.client_id);
-    const name = c?.name ?? snap.client_id.slice(0, 8);
-    const pnl  = snap.gross_pnl;
-    const feePaid = snap.fee_paid ?? 0;
-    const isLossMonth = snap.performance_fee === 0;
-    const isPaid      = !isLossMonth && feePaid >= snap.performance_fee;
-    const statusLabel = isLossMonth ? "LOSS MONTH" : isPaid ? "PAID ✓" : "PENDING";
-    const statusColor = isLossMonth ? grey : isPaid ? green : gold;
+  // ── Per-client rows — ALL active clients, not just those with snapshots ──
+  const clientRows = clients.map(c => {
+    const snap    = snapByClientId.get(c.id);
+    const feePaid = snap?.fee_paid ?? 0;
+
+    // Status:
+    // "NO REPORT"       — no snapshot this period (client not active or skipped)
+    // "PAID ✓"          — fee collected in full
+    // "PENDING"         — fee earned but not yet received
+    // "PROFIT · NO FEE" — profitable month but no monthly report formally sent
+    // "LOSS MONTH"      — genuinely unprofitable period
+    const statusKind = !snap ? "none"
+      : snap.performance_fee > 0 && feePaid >= snap.performance_fee ? "paid"
+      : snap.performance_fee > 0 ? "pending"
+      : snap.gross_pnl > 0 ? "no_fee"
+      : "loss";
+
+    const statusLabel = statusKind === "none"    ? "NO REPORT"
+      : statusKind === "paid"    ? "PAID ✓"
+      : statusKind === "pending" ? "PENDING"
+      : statusKind === "no_fee"  ? "PROFIT · NO FEE"
+      :                            "LOSS MONTH";
+
+    const statusColor = statusKind === "none"    ? grey
+      : statusKind === "paid"    ? green
+      : statusKind === "pending" ? gold
+      : statusKind === "no_fee"  ? "#3b82f6"
+      :                            grey;
+
+    const openingStr = snap ? fmtMoney(snap.opening_balance) : "—";
+    const closingStr = snap ? fmtMoney(snap.closing_balance) : "—";
+    const pnlStr     = snap ? fmtSigned(snap.gross_pnl) : "—";
+    const pnlClr     = snap ? pnlColor(snap.gross_pnl) : grey;
+    const feeEarned  = snap ? fmtMoney(snap.performance_fee) : "—";
+    const feePaidStr = snap ? fmtMoney(feePaid) : "—";
 
     return `
     <tr style="border-bottom:1px solid #1f2937;">
-      <td style="padding:10px 12px;color:#e5e7eb;font-size:13px;font-weight:600;">${name}</td>
-      <td style="padding:10px 12px;color:#9ca3af;font-size:12px;text-align:right;">${fmtMoney(snap.opening_balance)}</td>
-      <td style="padding:10px 12px;color:#e5e7eb;font-size:12px;text-align:right;">${fmtMoney(snap.closing_balance)}</td>
-      <td style="padding:10px 12px;color:${pnlColor(pnl)};font-size:12px;font-weight:600;text-align:right;">${fmtSigned(pnl)}</td>
-      <td style="padding:10px 12px;color:${gold};font-size:12px;text-align:right;">${fmtMoney(snap.performance_fee)}</td>
-      <td style="padding:10px 12px;color:${feePaid > 0 ? green : grey};font-size:12px;text-align:right;">${fmtMoney(feePaid)}</td>
+      <td style="padding:10px 12px;color:#e5e7eb;font-size:13px;font-weight:600;">${c.name}</td>
+      <td style="padding:10px 12px;color:#9ca3af;font-size:12px;text-align:right;">${openingStr}</td>
+      <td style="padding:10px 12px;color:#e5e7eb;font-size:12px;text-align:right;">${closingStr}</td>
+      <td style="padding:10px 12px;color:${pnlClr};font-size:12px;font-weight:600;text-align:right;">${pnlStr}</td>
+      <td style="padding:10px 12px;color:${gold};font-size:12px;text-align:right;">${feeEarned}</td>
+      <td style="padding:10px 12px;color:${feePaid > 0 ? green : grey};font-size:12px;text-align:right;">${feePaidStr}</td>
       <td style="padding:10px 12px;text-align:center;">
         <span style="background:${statusColor}20;color:${statusColor};font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:0.05em;">${statusLabel}</span>
       </td>
@@ -880,12 +890,14 @@ async function sendArcusAdminReport(
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:12px;overflow:hidden;">
       <tr>
         <td style="padding:18px;text-align:center;border-right:1px solid #1f2937;">
-          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Total AUM</div>
-          <div style="color:#fff;font-size:22px;font-weight:800;">${fmtMoney(totalAUM)}</div>
+          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Period AUM</div>
+          <div style="color:#fff;font-size:22px;font-weight:800;">${fmtMoney(snapshotAUM)}</div>
+          <div style="color:#4b5563;font-size:10px;margin-top:3px;">${label} closing balances</div>
         </td>
         <td style="padding:18px;text-align:center;border-right:1px solid #1f2937;">
           <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Active Clients</div>
-          <div style="color:#fff;font-size:22px;font-weight:800;">${snaps.length}</div>
+          <div style="color:#fff;font-size:22px;font-weight:800;">${clients.length}</div>
+          <div style="color:#4b5563;font-size:10px;margin-top:3px;">${snaps.length} reporting this period</div>
         </td>
         <td style="padding:18px;text-align:center;border-right:1px solid #1f2937;">
           <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Fund P&L</div>
@@ -982,8 +994,8 @@ async function sendArcusAdminReport(
       <tr><td style="padding:20px 24px;">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
-            <td style="padding:6px 0;color:#9ca3af;font-size:13px;">Total AUM</td>
-            <td style="padding:6px 0;color:#fff;font-size:13px;font-weight:700;text-align:right;">${fmtMoney(totalAUM)}</td>
+            <td style="padding:6px 0;color:#9ca3af;font-size:13px;">Period AUM (all clients)</td>
+            <td style="padding:6px 0;color:#fff;font-size:13px;font-weight:700;text-align:right;">${fmtMoney(snapshotAUM)}</td>
           </tr>
           <tr>
             <td style="padding:6px 0;color:#9ca3af;font-size:13px;">Total Fund P&amp;L</td>
@@ -1016,7 +1028,154 @@ async function sendArcusAdminReport(
   await resend.emails.send({
     from:    ARCUS_EMAIL_FROM,
     to:      ARCUS_EMAIL_CC,
-    subject: `[Arcus Internal] ${label} — AUM ${fmtMoney(totalAUM)} · Net Income ${fmtSigned(netIncome)}`,
+    subject: `[Arcus Internal] ${label} — Monthly Report · Net Income ${fmtSigned(netIncome)}`,
+    html,
+  });
+}
+
+// ─── Arcus live portfolio status email ────────────────────────────────────────
+//
+// Second internal email sent alongside the monthly report — shows LIVE equity
+// from bot_state (current moment, not the finalized snapshot period).
+// Useful for understanding the fund's state as of the report send time.
+
+async function sendArcusLiveReport(
+  resend: Resend,
+  supabase: ReturnType<typeof createServiceClient>,
+  clients: Client[]
+): Promise<void> {
+  const gold  = "#f8ac07";
+  const green = "#22c55e";
+  const grey  = "#6b7280";
+
+  type BotRow = {
+    client_id: string;
+    current_amount: number | null;
+    total_equity: number | null;
+    updated_at: string | null;
+    position: string | null;
+    symbol: string | null;
+    margin_level: number | null;
+  };
+
+  const { data: botRows } = await supabase
+    .from("bot_state")
+    .select("client_id, current_amount, total_equity, updated_at, position, symbol, margin_level");
+
+  const liveByBot = new Map(
+    (botRows ?? []).map((b: BotRow) => [b.client_id, b])
+  );
+
+  const now = new Date();
+  const curMonthLabel = now.toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+  const nowStr = now.toUTCString();
+
+  const liveAUM = clients.reduce((sum, c) => {
+    const b = c.bot_id ? liveByBot.get(c.bot_id) : null;
+    return sum + (b ? (b.total_equity ?? b.current_amount ?? 0) : 0);
+  }, 0);
+
+  const clientRows = clients.map(c => {
+    const bot = c.bot_id ? liveByBot.get(c.bot_id) : null;
+    const eq  = bot ? (bot.total_equity ?? bot.current_amount) : null;
+    const eqStr = eq != null ? fmtMoney(eq) : "—";
+    const eqColor = eq != null ? "#e5e7eb" : grey;
+    const position = bot?.position ?? "—";
+    const ml = bot?.margin_level;
+    const mlStr = ml != null ? ml.toFixed(2) : "—";
+    const mlColor = ml == null ? grey : ml < 1.2 ? "#ef4444" : ml < 1.5 ? "#f59e0b" : green;
+    const lastUp = bot?.updated_at
+      ? new Date(bot.updated_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }) + " UTC"
+      : "—";
+
+    return `
+    <tr style="border-bottom:1px solid #1f2937;">
+      <td style="padding:10px 12px;color:#e5e7eb;font-size:13px;font-weight:600;">${c.name}</td>
+      <td style="padding:10px 12px;color:#6b7280;font-size:12px;">${c.bot_id ?? "—"}</td>
+      <td style="padding:10px 12px;color:${eqColor};font-size:13px;font-weight:700;text-align:right;">${eqStr}</td>
+      <td style="padding:10px 12px;color:#9ca3af;font-size:12px;text-align:center;">${position}</td>
+      <td style="padding:10px 12px;color:${mlColor};font-size:12px;text-align:center;">${mlStr}</td>
+      <td style="padding:10px 12px;color:#6b7280;font-size:11px;">${lastUp}</td>
+    </tr>`;
+  }).join("");
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#000;">
+<tr><td align="center" style="padding:32px 16px;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:700px;background:#0a0a0a;border-radius:16px;border:1px solid #1f2937;overflow:hidden;">
+
+  <!-- HEADER -->
+  <tr><td style="background:linear-gradient(135deg,#111827,#0a0a0a);padding:28px 32px;border-bottom:1px solid #1f2937;">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td>
+        <div style="color:${gold};font-size:21px;font-weight:800;letter-spacing:-0.02em;">◈ ARCUS QUANT FUND — Live Portfolio</div>
+        <div style="color:#9ca3af;font-size:12px;margin-top:3px;">Snapshot as of ${nowStr}</div>
+      </td>
+      <td align="right">
+        <div style="background:#dc262620;border:1px solid #dc262640;border-radius:8px;padding:7px 14px;display:inline-block;">
+          <div style="color:#dc2626;font-size:11px;font-weight:700;letter-spacing:0.06em;">ADMIN ONLY — DO NOT FORWARD</div>
+        </div>
+      </td>
+    </tr></table>
+  </td></tr>
+
+  <!-- AUM SUMMARY -->
+  <tr><td style="padding:24px 32px 0;">
+    <div style="color:${gold};font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Live Portfolio — ${curMonthLabel}</div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:12px;overflow:hidden;">
+      <tr>
+        <td style="padding:18px;text-align:center;border-right:1px solid #1f2937;">
+          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Total Live AUM</div>
+          <div style="color:#fff;font-size:26px;font-weight:800;">${fmtMoney(liveAUM)}</div>
+        </td>
+        <td style="padding:18px;text-align:center;border-right:1px solid #1f2937;">
+          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">Active Bots</div>
+          <div style="color:#fff;font-size:26px;font-weight:800;">${clients.filter(c => c.bot_id).length}</div>
+        </td>
+        <td style="padding:18px;text-align:center;">
+          <div style="color:#6b7280;font-size:11px;margin-bottom:5px;">As Of</div>
+          <div style="color:#9ca3af;font-size:13px;font-weight:600;">${now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}</div>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- CLIENT LIVE EQUITY TABLE -->
+  <tr><td style="padding:24px 32px 0;">
+    <div style="color:${gold};font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Live Equity by Client</div>
+    <div style="background:#111827;border-radius:12px;overflow:hidden;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr style="background:#0a0a0a;border-bottom:1px solid #374151;">
+          <th style="padding:10px 12px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Client</th>
+          <th style="padding:10px 12px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Bot</th>
+          <th style="padding:10px 12px;color:#6b7280;font-size:10px;font-weight:600;text-align:right;text-transform:uppercase;">Live Equity</th>
+          <th style="padding:10px 12px;color:#6b7280;font-size:10px;font-weight:600;text-align:center;text-transform:uppercase;">Position</th>
+          <th style="padding:10px 12px;color:#6b7280;font-size:10px;font-weight:600;text-align:center;text-transform:uppercase;">Margin</th>
+          <th style="padding:10px 12px;color:#6b7280;font-size:10px;font-weight:600;text-align:left;text-transform:uppercase;">Last Updated</th>
+        </tr>
+        ${clientRows}
+      </table>
+    </div>
+  </td></tr>
+
+  <!-- FOOTER -->
+  <tr><td style="padding:24px 32px 28px;margin-top:12px;">
+    <div style="border-top:1px solid #1f2937;padding-top:16px;color:#374151;font-size:10px;line-height:1.5;">
+      Live snapshot generated ${nowStr} · Arcus Quant Fund · Do not distribute.
+    </div>
+  </td></tr>
+
+</table>
+</td></tr></table>
+</body></html>`;
+
+  await resend.emails.send({
+    from:    ARCUS_EMAIL_FROM,
+    to:      ARCUS_EMAIL_CC,
+    subject: `[Arcus Internal] Live Status — AUM ${fmtMoney(liveAUM)} · ${curMonthLabel}`,
     html,
   });
 }
@@ -1030,7 +1189,13 @@ export async function GET(req: NextRequest) {
 
   const resend   = new Resend(process.env.RESEND_API_KEY);
   const supabase = createServiceClient();
-  const { year, month, label, startISO, endISO } = getPreviousMonth();
+
+  // Allow ?year=2026&month=2 to manually reprocess a specific past month.
+  // Cron invocations don't pass these — they always process the previous month.
+  const searchParams = new URL(req.url).searchParams;
+  const yearOverride  = searchParams.get("year")  ? parseInt(searchParams.get("year")!)  : null;
+  const monthOverride = searchParams.get("month") ? parseInt(searchParams.get("month")!) : null;
+  const { year, month, label, startISO, endISO } = getReportPeriod(yearOverride, monthOverride);
 
   const results = {
     reports_sent: 0,
@@ -1051,14 +1216,28 @@ export async function GET(req: NextRequest) {
     try {
       if (!client.bot_id || !client.email) { results.skipped++; continue; }
 
-      // Trades for the month
-      const { data: tradeRows } = await supabase
+      // Trades for the month — prefer source='binance' (authoritative fill data,
+      // deduplicates sqlite vs binance duplicates). Falls back to all sources
+      // if no binance records exist (e.g. a new client not yet synced).
+      let { data: tradeRows } = await supabase
         .from("trade_log")
         .select("trade_id, timestamp, symbol, side, price, quantity, amount, pnl, reason")
         .eq("client_id", client.bot_id)
+        .eq("source", "binance")
         .gte("timestamp", startISO)
         .lte("timestamp", endISO)
         .order("timestamp", { ascending: true });
+
+      if (!tradeRows || tradeRows.length === 0) {
+        const { data: fallbackRows } = await supabase
+          .from("trade_log")
+          .select("trade_id, timestamp, symbol, side, price, quantity, amount, pnl, reason")
+          .eq("client_id", client.bot_id)
+          .gte("timestamp", startISO)
+          .lte("timestamp", endISO)
+          .order("timestamp", { ascending: true });
+        tradeRows = fallbackRows;
+      }
 
       // Balance history for the month
       const { data: balanceRows } = await supabase
@@ -1078,20 +1257,9 @@ export async function GET(req: NextRequest) {
         .lte("occurred_at", endISO)
         .order("occurred_at", { ascending: true });
 
-      // Latest exchange rate
-      const { data: rateRow } = await supabase
-        .from("exchange_rates")
-        .select("lower_bound, upper_bound, mid_rate, fetched_at")
-        .eq("asset", "USDT")
-        .eq("fiat", client.fiat_currency)
-        .order("fetched_at", { ascending: false })
-        .limit(1)
-        .single();
-
       const trades        = (tradeRows ?? []) as Trade[];
       const balances      = (balanceRows ?? []) as BalancePoint[];
       const capitalEvents = (capitalRows ?? []) as CapitalEvent[];
-      const rate          = rateRow as ExchangeRate | null;
 
       // ── Idempotency: check if this month's report was already sent ──
       // Prevents duplicate emails and double-updating carried_loss on re-runs.
@@ -1181,24 +1349,23 @@ export async function GET(req: NextRequest) {
         results.errors.push({ client: client.name, error: `Reconciliation mismatch: delta=${reconciliationDelta.toFixed(4)} USDT (see server logs)` });
       }
 
-      const html  = buildEmail(client, stats, trades, capitalEvents, rate, label, feePaid, year, month);
+      const html  = buildEmail(client, stats, trades, capitalEvents, label, feePaid, year, month);
 
+      const feeAmt = stats.performance_fee.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const subject = stats.net_pnl > 0
-        ? `${label} Report — Performance Fee Due: ${fmtMoney(stats.performance_fee)} USDT`
+        ? `${label} Report — Performance Fee Due: ${feeAmt} USDT`
         : `${label} Report — Account Statement`;
 
-      const { error: emailErr } = await resend.emails.send({
-        from: ARCUS_EMAIL_FROM,
-        to:   client.email,
-        cc:   ARCUS_EMAIL_CC,
-        subject,
-        html,
-      });
-
-      if (emailErr) throw new Error(`Resend: ${emailErr.message}`);
-
-      // Persist snapshot
-      await supabase.from("monthly_snapshots").upsert({
+      // CC both admins on client emails — but not on Shehzad's own account email
+      // (he is an admin; he'll receive the internal admin report separately)
+      const isAdminEmail = client.email.toLowerCase() === ARCUS_EMAIL_CC.toLowerCase();
+      // ── Persist snapshot BEFORE sending email ────────────────────────────────
+      // Writing stats first prevents a duplicate-email scenario on Vercel retry:
+      //   old order: email → upsert (crash between = double email on retry)
+      //   new order: upsert stats → email → mark report_sent_at
+      // On retry after email failure, existingSnap.carried_loss_in is used so
+      // double-deducting the carried loss is impossible.
+      const { error: snapErr } = await supabase.from("monthly_snapshots").upsert({
         client_id: client.id, year, month,
         opening_balance:   stats.opening_balance,
         closing_balance:   stats.closing_balance,
@@ -1219,9 +1386,30 @@ export async function GET(req: NextRequest) {
         worst_trade_pnl:   stats.worst_trade_pnl,
         avg_win:           stats.avg_win,
         avg_loss:          stats.avg_loss,
-        report_sent_at:    new Date().toISOString(),
-        report_sent_to:    client.email,
+        // report_sent_at intentionally omitted — set only after email confirmed sent
       }, { onConflict: "client_id,year,month" });
+
+      if (snapErr) throw new Error(`Snapshot write failed: ${snapErr.message}`);
+
+      // ── Send email ────────────────────────────────────────────────────────────
+      const { error: emailErr } = await resend.emails.send({
+        from: ARCUS_EMAIL_FROM,
+        to:   client.email,
+        cc:   isAdminEmail ? undefined : [ARCUS_EMAIL_CC, ARCUS_EMAIL_CC2],
+        subject,
+        html,
+      });
+
+      if (emailErr) throw new Error(`Resend: ${emailErr.message}`);
+
+      // ── Mark report as sent (idempotency sentinel) ────────────────────────────
+      // Only set after email is confirmed delivered so a retry after email failure
+      // can re-send (existingSnap.report_sent_at will still be null).
+      await supabase.from("monthly_snapshots")
+        .update({ report_sent_at: new Date().toISOString(), report_sent_to: client.email })
+        .eq("client_id", client.id)
+        .eq("year", year)
+        .eq("month", month);
 
       // Roll carried_loss forward — monthly_snapshots.carried_loss_out is the
       // source of truth if this update ever fails (recoverable via manual SQL).
@@ -1259,11 +1447,49 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Arcus internal business report — sent after all client reports complete
+  // ── Failure alert — if any client report errored, notify admin immediately ──
+  // Cron runs silently — without this, errors are invisible unless you check Vercel logs.
+  if (results.errors.length > 0) {
+    try {
+      const errorRows = results.errors
+        .map(e => `<tr style="border-bottom:1px solid #1f2937;">
+          <td style="padding:8px 12px;color:#e5e7eb;font-size:13px;font-weight:600;">${e.client}</td>
+          <td style="padding:8px 12px;color:#ef4444;font-size:12px;font-family:monospace;">${e.error}</td>
+        </tr>`)
+        .join("");
+      await resend.emails.send({
+        from:    ARCUS_EMAIL_FROM,
+        to:      ARCUS_EMAIL_CC,
+        subject: `[Arcus Alert] ⚠ ${results.errors.length} error(s) in ${label} monthly report`,
+        html: `<!DOCTYPE html><html><body style="background:#000;margin:0;padding:32px;font-family:sans-serif;">
+          <div style="max-width:620px;margin:0 auto;background:#0a0a0a;border:1px solid #ef444440;border-radius:12px;padding:24px;">
+            <div style="color:#ef4444;font-size:16px;font-weight:800;margin-bottom:4px;">⚠ Monthly Report Errors</div>
+            <div style="color:#6b7280;font-size:12px;margin-bottom:20px;">${label} · ${results.reports_sent} sent · ${results.skipped} skipped · ${results.errors.length} failed</div>
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#111827;border-radius:8px;overflow:hidden;">
+              <tr style="background:#0a0a0a;"><th style="padding:8px 12px;color:#6b7280;font-size:10px;text-align:left;text-transform:uppercase;">Client</th><th style="padding:8px 12px;color:#6b7280;font-size:10px;text-align:left;text-transform:uppercase;">Error</th></tr>
+              ${errorRows}
+            </table>
+            <div style="margin-top:16px;color:#4b5563;font-size:11px;">Check Vercel function logs for full stack traces. You may need to manually trigger the report for affected clients after resolving the issue.</div>
+          </div>
+        </body></html>`,
+      });
+    } catch (alertErr) {
+      console.error("[monthly-report] Failed to send error alert email:", alertErr instanceof Error ? alertErr.message : String(alertErr));
+    }
+  }
+
+  // Arcus internal reports — sent after all client reports complete
+  // Email 1: Monthly snapshot report (finalized P&L, fees, income statement)
   try {
     await sendArcusAdminReport(resend, supabase, year, month, label, clients as Client[]);
   } catch (err) {
-    console.error("[monthly-report] Arcus admin report failed:", err instanceof Error ? err.message : String(err));
+    console.error("[monthly-report] Arcus admin monthly report failed:", err instanceof Error ? err.message : String(err));
+  }
+  // Email 2: Live portfolio status (current bot_state equity — always current)
+  try {
+    await sendArcusLiveReport(resend, supabase, clients as Client[]);
+  } catch (err) {
+    console.error("[monthly-report] Arcus live status report failed:", err instanceof Error ? err.message : String(err));
   }
 
   return NextResponse.json({ success: true, period: { year, month, label }, ...results });

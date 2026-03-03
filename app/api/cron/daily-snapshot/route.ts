@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const ADMIN_EMAIL = "shehzadahmed@arcusquantfund.com";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -8,7 +12,6 @@ type Client = {
   name: string;
   email: string;
   bot_id: string | null;
-  fiat_currency: string;
 };
 
 type BotState = {
@@ -20,14 +23,6 @@ type BotState = {
   updated_at: string | null;
 };
 
-type P2PRate = {
-  fiat: string;
-  lower_bound: number;
-  upper_bound: number;
-  mid_rate: number;
-  ad_count: number;
-};
-
 // ─── Authorization ────────────────────────────────────────────────────────────
 
 function isAuthorized(req: NextRequest): boolean {
@@ -37,66 +32,6 @@ function isAuthorized(req: NextRequest): boolean {
   const isManual =
     req.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}`;
   return isCronRequest || isManual;
-}
-
-// ─── Binance P2P Rate Fetcher ─────────────────────────────────────────────────
-// Fetches USDT→fiat rates for bank transfer ads with min 1000 USDT.
-// tradeType "BUY" = advertiser buys USDT from client → client receives fiat.
-// price = fiat received per 1 USDT.
-
-async function fetchP2PRates(fiat: string): Promise<P2PRate | null> {
-  try {
-    const res = await fetch(
-      "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "Mozilla/5.0 (compatible; ArcusQuantFund/1.0)",
-        },
-        body: JSON.stringify({
-          asset: "USDT",
-          fiat,
-          tradeType: "BUY",    // advertisers buying USDT — client sells USDT, receives fiat
-          page: 1,
-          rows: 20,
-          publisherType: null,
-          payTypes: ["BANK"],  // bank transfer only
-          transAmount: "1000", // 1000+ USDT per trade
-          countries: [],
-        }),
-      }
-    );
-
-    if (!res.ok) return null;
-
-    const json = await res.json();
-    const ads: { adv: { price: string; minSingleTransAmount: string } }[] =
-      json?.data ?? [];
-
-    // Filter: only ads that accept >= 1000 USDT
-    const filtered = ads.filter(
-      (ad) => parseFloat(ad.adv.minSingleTransAmount) <= 1000
-    );
-
-    if (filtered.length === 0) return null;
-
-    const prices = filtered
-      .map((ad) => parseFloat(ad.adv.price))
-      .filter((p) => !isNaN(p) && p > 0)
-      .sort((a, b) => a - b);
-
-    if (prices.length === 0) return null;
-
-    const lower_bound = prices[0];
-    const upper_bound = prices[prices.length - 1];
-    const mid_rate = prices[Math.floor(prices.length / 2)]; // median
-
-    return { fiat, lower_bound, upper_bound, mid_rate, ad_count: prices.length };
-  } catch {
-    console.error(`[daily-snapshot] P2P rate fetch failed for ${fiat}`);
-    return null;
-  }
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
@@ -112,14 +47,13 @@ export async function GET(req: NextRequest) {
   const results = {
     clients_snapshotted: 0,
     clients_skipped: 0,
-    rates_fetched: 0,
     errors: [] as string[],
   };
 
   // ── 1. Fetch all active clients ──────────────────────────────────────────
   const { data: clients, error: clientsErr } = await supabase
     .from("clients")
-    .select("id, name, email, bot_id, fiat_currency")
+    .select("id, name, email, bot_id")
     .eq("is_active", true);
 
   if (clientsErr || !clients) {
@@ -166,15 +100,32 @@ export async function GET(req: NextRequest) {
 
     const balanceBefore = (lastBalance as { balance: number } | null)?.balance ?? null;
 
-    // Insert balance snapshot (total equity = true account value)
-    const { error: balErr } = await supabase
+    // Idempotent snapshot: one row per client per UTC day.
+    // If the cron fires twice (Vercel retry), UPDATE the existing row instead of inserting a duplicate.
+    const todayUtc = now.substring(0, 10); // e.g. "2026-02-28"
+    const { data: todaySnap } = await supabase
       .from("balance_history")
-      .insert({
-        client_id: client.id,
-        balance: currentBalance,
-        equity: currentBalance,
-        recorded_at: now,
-      });
+      .select("id")
+      .eq("client_id", client.id)
+      .gte("recorded_at", `${todayUtc}T00:00:00.000Z`)
+      .order("recorded_at", { ascending: true })
+      .limit(1)
+      .single();
+
+    let balErr: { message: string } | null = null;
+    if (todaySnap) {
+      // Already snapshotted today — overwrite with latest reading (most recent bot state wins)
+      const { error } = await supabase
+        .from("balance_history")
+        .update({ balance: currentBalance, equity: currentBalance, recorded_at: now })
+        .eq("id", (todaySnap as { id: number }).id);
+      balErr = error;
+    } else {
+      const { error } = await supabase
+        .from("balance_history")
+        .insert({ client_id: client.id, balance: currentBalance, equity: currentBalance, recorded_at: now });
+      balErr = error;
+    }
 
     if (balErr) {
       results.errors.push(`Balance snapshot failed for ${client.name}: ${balErr.message}`);
@@ -201,57 +152,39 @@ export async function GET(req: NextRequest) {
     results.clients_snapshotted++;
   }
 
-  // ── 3. Fetch P2P exchange rates per unique fiat currency ─────────────────
-  const fiats = [...new Set((clients as Client[]).map((c) => c.fiat_currency).filter(Boolean))];
+  console.log("[daily-snapshot] Complete:", results);
 
-  for (const fiat of fiats) {
-    const rate = await fetchP2PRates(fiat);
-    if (!rate) {
-      results.errors.push(`P2P rate fetch failed for ${fiat}`);
-      continue;
-    }
-
-    // Store rate
-    const { error: rateErr } = await supabase.from("exchange_rates").insert({
-      asset: "USDT",
-      fiat: rate.fiat,
-      lower_bound: rate.lower_bound,
-      upper_bound: rate.upper_bound,
-      mid_rate: rate.mid_rate,
-      ad_count: rate.ad_count,
-      source: "Binance P2P",
-      fetched_at: now,
-    });
-
-    if (rateErr) {
-      results.errors.push(`Rate insert failed for ${fiat}: ${rateErr.message}`);
-      continue;
-    }
-
-    // Log rate fetch to audit log (use first client with this fiat as reference)
-    const refClient = (clients as Client[]).find((c) => c.fiat_currency === fiat);
-    if (refClient) {
-      await supabase.from("audit_log").insert({
-        client_id: refClient.id,
-        event_type: "RATE_FETCH",
-        amount: null,
-        balance_before: null,
-        balance_after: null,
-        description: `USDT/${fiat} P2P bank transfer rate (1000+ USDT) fetched`,
-        metadata: {
-          asset: "USDT",
-          fiat,
-          lower_bound: rate.lower_bound,
-          upper_bound: rate.upper_bound,
-          mid_rate: rate.mid_rate,
-          ad_count: rate.ad_count,
-        },
+  // Alert admin if any clients were skipped due to missing bot state.
+  // Silent skips are a data gap — dashboard and monthly report will show wrong figures.
+  if (results.errors.length > 0) {
+    try {
+      const errorList = results.errors
+        .map((e) => `<li style="font-family:monospace;font-size:12px;color:#ef4444;">${e}</li>`)
+        .join("");
+      await resend.emails.send({
+        from:    "Arcus Quant Fund <admin@arcusquantfund.com>",
+        to:      ADMIN_EMAIL,
+        subject: `[Arcus Alert] ⚠ Daily snapshot: ${results.errors.length} client(s) skipped (${now.substring(0, 10)})`,
+        html: `<!DOCTYPE html><html><body style="background:#000;margin:0;padding:32px;font-family:sans-serif;">
+          <div style="max-width:560px;margin:0 auto;background:#0a0a0a;border:1px solid #ef444440;border-radius:12px;padding:24px;">
+            <div style="color:#ef4444;font-size:15px;font-weight:800;margin-bottom:8px;">⚠ Daily Snapshot — Clients Skipped</div>
+            <div style="color:#6b7280;font-size:12px;margin-bottom:16px;">
+              ${results.clients_snapshotted} client(s) snapshotted · ${results.clients_skipped} skipped · ${results.errors.length} error(s)
+            </div>
+            <ul style="color:#fca5a5;font-size:13px;line-height:1.8;padding-left:16px;">
+              ${errorList}
+            </ul>
+            <div style="margin-top:16px;color:#6b7280;font-size:11px;">
+              Cause: bot_state row missing or total_equity null — ensure supabase_sync is running.
+              Monthly report will skip these clients if not resolved before month-end.
+            </div>
+          </div>
+        </body></html>`,
       });
+    } catch (alertErr) {
+      console.error("[daily-snapshot] Failed to send error alert:", alertErr instanceof Error ? alertErr.message : String(alertErr));
     }
-
-    results.rates_fetched++;
   }
 
-  console.log("[daily-snapshot] Complete:", results);
   return NextResponse.json({ success: true, timestamp: now, ...results });
 }
