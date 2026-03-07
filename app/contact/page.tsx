@@ -71,10 +71,10 @@ export default function ContactPage() {
             },
             {
               icon: <MessageCircle className="text-gold" size={22} />,
-              title: "WhatsApp",
-              desc: "Quick questions? Chat with us on WhatsApp.",
-              action: "Message on WhatsApp",
-              href: "https://wa.me/8801234567890",
+              title: "View Track Record",
+              desc: "See live performance data — every trade logged, every number real.",
+              action: "View Track Record",
+              href: "/track-record",
             },
           ].map((c) => (
             <div key={c.title} className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-gold/30 transition-colors">

@@ -30,7 +30,7 @@ export const metadata: Metadata = {
       "Systematic quantitative trading fund. Performance-fee-only model. Live algorithmic strategies across crypto perpetual futures.",
     images: [
       {
-        url: "https://arcusquantfund.com/og-image.png",
+        url: "https://arcusquantfund.com/opengraph-image",
         width: 1200,
         height: 630,
         alt: "Arcus Quant Fund — Systematic Algorithmic Trading",

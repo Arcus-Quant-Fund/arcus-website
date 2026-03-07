@@ -40,16 +40,21 @@ type ChartTrade = {
 };
 
 
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 function formatDate(ts: string) {
   const d = new Date(ts.includes("T") ? ts : ts.replace(" ", "T") + "Z");
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
 }
 
 function formatUpdated(iso: string) {
   const d = new Date(iso);
-  const date = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-  return `Updated ${date} at ${time}`;
+  const date = `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
+  const h = d.getUTCHours();
+  const m = String(d.getUTCMinutes()).padStart(2, "0");
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `Updated ${date} at ${h12}:${m} ${ampm} UTC`;
 }
 
 export default function TrackRecordClient({
@@ -100,10 +105,10 @@ export default function TrackRecordClient({
   // Derive count and period from live trade data — avoids stale performance_stats cache
   const totalTrades = trades.length > 0 ? trades.length : (stats?.total_trades ?? 0);
   const periodStart = trades.length > 0
-    ? new Date(trades[0].timestamp).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+    ? (() => { const d = new Date(trades[0].timestamp); return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; })()
     : (stats?.period_start ?? "—");
   const periodEnd = trades.length > 0
-    ? new Date(trades[trades.length - 1].timestamp).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+    ? (() => { const d = new Date(trades[trades.length - 1].timestamp); return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; })()
     : (stats?.period_end ?? "Feb 2026");
 
   const updatedStr = stats?.updated_at
