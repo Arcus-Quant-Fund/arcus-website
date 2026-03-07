@@ -128,10 +128,13 @@ function calcMargin(botState: NonNullable<BotState>, currentPrice: number) {
   const marginLevel  = botState.margin_level ?? calcedMarginLevel;
 
   const marginStatus = marginLevel < 1.1 ? "HIGH RISK" : marginLevel < 1.3 ? "MODERATE RISK" : "SAFE";
-  const pnlPct       = positionValue > 0 ? (unrealizedPnl / positionValue) * 100 * leverage : 0;
+  // PnL % on margin: unrealizedPnl / initialMargin (what we actually put in)
+  const pnlPct       = initialMargin > 0 ? (unrealizedPnl / initialMargin) * 100 : 0;
 
   const requiredMargin = positionValue / leverage;  // current margin requirement (for display)
-  const marginRatio    = ((positionValue - requiredMargin) / positionValue) * 100;
+  // Equity ratio = actual equity / position value — changes with PnL (unlike the constant 1-1/lev)
+  const equity         = initialMargin + unrealizedPnl;
+  const marginRatio    = positionValue > 0 ? (equity / positionValue) * 100 : 0;
   const borrowedValue  = positionValue - requiredMargin;
   return {
     positionValue, liqPrice, distToLiq, requiredMargin,
@@ -373,7 +376,7 @@ export default function DashboardClient({ session, botState, priceData, trades, 
     <div class="metric"><div class="metric-label">Total Deployed</div><div class="metric-value">$${totalDeposited.toFixed(2)}</div></div>
     <div class="metric"><div class="metric-label">Net In Account</div><div class="metric-value">$${netInAccount.toFixed(2)}</div></div>
     <div class="metric"><div class="metric-label">Current Equity</div><div class="metric-value">$${currentEquity.toFixed(2)}</div></div>
-    <div class="metric"><div class="metric-label">Absolute P&L</div><div class="metric-value class="${absolutePnl >= 0 ? 'pos' : 'neg'}">${absolutePnl >= 0 ? "+" : "−"}$${Math.abs(absolutePnl).toFixed(2)}</div></div>
+    <div class="metric"><div class="metric-label">Absolute P&L</div><div class="metric-value ${absolutePnl >= 0 ? 'pos' : 'neg'}">${absolutePnl >= 0 ? "+" : "−"}$${Math.abs(absolutePnl).toFixed(2)}</div></div>
     <div class="metric"><div class="metric-label">Absolute Return</div><div class="metric-value">${absoluteReturn >= 0 ? "+" : ""}${absoluteReturn.toFixed(2)}%</div></div>
     <div class="metric"><div class="metric-label">Time-Weighted Return</div><div class="metric-value">${twr >= 0 ? "+" : ""}${twr.toFixed(2)}%</div></div>
     <div class="metric"><div class="metric-label">Total Fees Earned</div><div class="metric-value">$${totalFeesEarned.toFixed(2)}</div></div>
@@ -483,7 +486,6 @@ export default function DashboardClient({ session, botState, priceData, trades, 
   const _balancePnl    = currentEquity - netInAccount;
   const absolutePnl    = (_balancePnl < 0 && totalPnl > 0) ? totalPnl : _balancePnl;
   const absoluteReturn = (() => {
-    if (absolutePnl <= 0) return 0;
     const denom = netInAccount > 0 ? netInAccount : totalDeposited;
     return denom > 0 ? (absolutePnl / denom) * 100 : 0;
   })();
@@ -1059,9 +1061,13 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                 <ResponsiveContainer width="100%" height={260}>
                   <AreaChart data={cumulativePnlData} margin={{ left: 10, right: 10 }}>
                     <defs>
-                      <linearGradient id="pnlGrad" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="pnlGradPos" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2} />
                         <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="pnlGradNeg" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid stroke="#1f2937" strokeDasharray="3 3" />
@@ -1074,7 +1080,7 @@ export default function DashboardClient({ session, botState, priceData, trades, 
                       labelFormatter={(n) => `Trade #${n}`}
                       formatter={(v: number | undefined, name: string | undefined) => [`$${(v ?? 0).toFixed(2)}`, name === "cumPnl" ? "Cumulative PnL" : "Trade PnL"] as [string, string]}
                     />
-                    <Area type="monotone" dataKey="cumPnl" stroke="#22c55e" strokeWidth={2} fill="url(#pnlGrad)" dot={false} name="cumPnl" />
+                    <Area type="monotone" dataKey="cumPnl" stroke={totalPnl >= 0 ? "#22c55e" : "#ef4444"} strokeWidth={2} fill={totalPnl >= 0 ? "url(#pnlGradPos)" : "url(#pnlGradNeg)"} dot={false} name="cumPnl" />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (

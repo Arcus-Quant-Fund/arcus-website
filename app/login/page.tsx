@@ -20,20 +20,25 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    if (result?.error) {
+      if (result?.error) {
+        setLoading(false);
+        setError("Invalid email or password.");
+      } else {
+        // Show welcome animation, then navigate
+        setLoading(false);
+        setSuccess(true);
+        setTimeout(() => { window.location.href = "/dashboard"; }, 2200);
+      }
+    } catch {
       setLoading(false);
-      setError("Invalid email or password.");
-    } else {
-      // Show welcome animation, then navigate
-      setLoading(false);
-      setSuccess(true);
-      setTimeout(() => { window.location.href = "/dashboard"; }, 2200);
+      setError("Network error — please check your connection and try again.");
     }
   }
 
@@ -121,12 +126,17 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <p className="text-gray-600 text-xs text-center mt-5">
-              Don&apos;t have access?{" "}
-              <a href="/contact" className="text-gold hover:text-gold-light transition-colors">
-                Apply here
+            <div className="flex items-center justify-between mt-5">
+              <a href="/forgot-password" className="text-gray-500 text-xs hover:text-[#f8ac07] transition-colors">
+                Forgot password?
               </a>
-            </p>
+              <p className="text-gray-600 text-xs">
+                Don&apos;t have access?{" "}
+                <a href="/signup" className="text-gold hover:text-gold-light transition-colors">
+                  Apply here
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </div>

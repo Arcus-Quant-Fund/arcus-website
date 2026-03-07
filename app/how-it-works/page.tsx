@@ -4,38 +4,44 @@ import { ArrowRight } from "lucide-react";
 const steps = [
   {
     n: "01",
-    title: "Schedule an Intro Call",
-    desc: "Book a free 30-minute call via Calendly. We discuss your investment goals, risk appetite, account size, and whether our strategies are a good fit for you.",
-    detail: "No commitment required. Completely confidential.",
+    title: "Start Your Application",
+    desc: "Click \"Get Started\" and fill in your details — name, email, country, and estimated starting capital. The entire onboarding is self-service and guided step-by-step.",
+    detail: "Takes about 15 minutes total. No call required — but we're happy to jump on one if you'd like.",
   },
   {
     n: "02",
-    title: "Sign Agreements",
-    desc: "If we're aligned, you sign an NDA and a pilot agreement. These documents protect both parties and clearly outline fee structure, responsibilities, and exit terms.",
-    detail: "Agreements reviewed and signed digitally. Usually done within 24 hours.",
+    title: "Review & Accept Agreements",
+    desc: "Read and accept three agreements directly in the signup flow: an NDA, a Participation & Service Agreement, and a Risk Disclosure Statement. These protect both parties and clearly outline fee structure, responsibilities, and exit terms.",
+    detail: "All reviewed and accepted digitally within the signup process.",
   },
   {
     n: "03",
-    title: "Open Your Account",
-    desc: "You open your own account on the exchange or broker we'll be trading on (e.g., Binance, Bybit, Interactive Brokers). We guide you through the setup.",
-    detail: "Your capital stays in your name. We have zero access to withdrawals.",
+    title: "Open a Binance Sub-Account",
+    desc: "We recommend opening a dedicated Binance sub-account for Arcus to trade on. This keeps your trading funds completely separate from your personal assets, and gives you clear visibility and one-click shutdown at any time.",
+    detail: "Takes 5 minutes. Step-by-step instructions are shown during signup.",
   },
   {
     n: "04",
-    title: "Grant API Access",
-    desc: "You generate a trade-only API key and share it with us. This key can execute trades but cannot withdraw funds — your capital is fully protected.",
-    detail: "Takes 5 minutes. We provide step-by-step instructions.",
+    title: "Fund & Enable Margin",
+    desc: "Transfer USDT into your sub-account and enable Isolated Margin trading for the XRPUSDT pair. Isolated margin means potential losses are capped per position — your total balance is never at risk on a single trade.",
+    detail: "Recommended minimum: $1,000 USD equivalent.",
   },
   {
     n: "05",
-    title: "Bot Goes Live",
-    desc: "The strategy is deployed on your account. You receive login credentials to your personal client dashboard where you can monitor every trade, position, and P&L in real time.",
-    detail: "Usually live within 48 hours of signing.",
+    title: "Create & Submit API Keys",
+    desc: "Generate a trade-only API key (with IP restrictions) and paste it into the signup form. Our system instantly validates your Binance permissions — ensuring withdrawals are disabled, margin trading is enabled, and IPs are whitelisted correctly.",
+    detail: "Automated validation. Instant feedback if anything needs to be adjusted.",
   },
   {
     n: "06",
+    title: "Bot Activated Automatically",
+    desc: "Once your application is approved, your trading bot is provisioned and deployed automatically on our servers. You receive login credentials to your personal client dashboard where you can monitor every trade, position, and P&L in real time.",
+    detail: "Usually live within 24 hours of submission.",
+  },
+  {
+    n: "07",
     title: "Monthly Reports & Fees",
-    desc: "At the end of each month, you receive a detailed performance report. Our performance fee (50%) is charged only on net profits — if you don't profit, we don't charge.",
+    desc: "At the end of each month, you receive a detailed performance report with full financial statements. Our performance fee (35%) is charged only on net profits — if you don't profit, we don't charge.",
     detail: "No management fee. No monthly charges. Pure performance alignment.",
   },
 ];
@@ -43,23 +49,35 @@ const steps = [
 const faqs = [
   {
     q: "What is the minimum account size?",
-    a: "Currently $10,000 USD equivalent. This ensures our strategies can be executed with proper position sizing and risk management.",
+    a: "The recommended minimum is $1,000 USD equivalent. Higher capital enables more positions and better diversification across market conditions.",
+  },
+  {
+    q: "Why do you recommend a sub-account?",
+    a: "A dedicated Binance sub-account keeps your Arcus trading funds completely separate from your personal assets. It gives you clear performance visibility, and you can shut everything down instantly by deleting the API key — your main account is never touched.",
   },
   {
     q: "Can I withdraw my funds at any time?",
-    a: "Yes. Your capital is in your own account. You can withdraw at any time, though mid-cycle withdrawals may affect open positions.",
+    a: "Yes. Your capital is in your own Binance account. You can withdraw at any time, though mid-cycle withdrawals may affect open positions.",
   },
   {
     q: "What markets do you trade?",
-    a: "Primarily cryptocurrency perpetual futures (Binance, Bybit) and US equities. Strategy allocation depends on your risk profile.",
+    a: "Primarily XRP/USDT on Binance using an isolated margin strategy. Our DC VWAP system identifies trend reversals and manages positions with automated risk controls.",
   },
   {
     q: "What is your performance fee?",
-    a: "50% on net monthly profits. No management fee, no fixed charges. We only earn when you earn.",
+    a: "35% on net monthly profits. No management fee, no fixed charges. We only earn when you earn. A high-water mark ensures no fee is charged on previously lost capital.",
+  },
+  {
+    q: "Can Arcus withdraw my funds?",
+    a: "No. Your API key is configured with trade-only permissions and restricted to our server IPs. Withdrawal permissions are never requested and are explicitly disabled.",
   },
   {
     q: "How do I monitor my account?",
-    a: "You get a private client dashboard at arcusquantfund.com/dashboard showing balance, P&L, open positions, and trade history — updated in real time.",
+    a: "You get a private client dashboard at arcusquantfund.com/dashboard showing balance, P&L, open positions, and trade history — updated in real time. All trades are also visible in your Binance app.",
+  },
+  {
+    q: "Can I stop at any time?",
+    a: "Yes. Simply delete the API key on Binance — the bot stops executing within seconds. You keep all your funds and there are no exit fees or penalties.",
   },
 ];
 
@@ -72,7 +90,7 @@ export default function HowItWorksPage() {
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
             How It <span className="gradient-text">Works</span>
           </h1>
-          <p className="text-gray-400 text-lg">From first call to live trading in under a week.</p>
+          <p className="text-gray-400 text-lg">From signup to live trading — self-service, fully guided, under 24 hours.</p>
         </div>
 
         {/* Steps */}
@@ -101,7 +119,7 @@ export default function HowItWorksPage() {
             {[
               { label: "Management Fee", value: "0%" },
               { label: "Monthly Charge", value: "$0" },
-              { label: "Performance Fee", value: "50%" },
+              { label: "Performance Fee", value: "35%" },
               { label: "Charged On", value: "Net Profit" },
             ].map((f) => (
               <div key={f.label} className="text-center p-4 bg-gray-800/50 rounded-xl">
@@ -111,7 +129,7 @@ export default function HowItWorksPage() {
             ))}
           </div>
           <p className="text-gray-500 text-sm mt-4 text-center">
-            High-water mark applies. No fee charged until previous losses are recovered.
+            High-water mark applies. No fee charged until previous losses are fully recovered.
           </p>
         </div>
 
@@ -129,12 +147,18 @@ export default function HowItWorksPage() {
         </div>
 
         {/* CTA */}
-        <div className="text-center mb-20">
+        <div className="text-center mb-20 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
-            href="/contact"
+            href="/signup"
             className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
           >
-            Schedule Your Intro Call <ArrowRight size={18} />
+            Get Started — Sign Up Now <ArrowRight size={18} />
+          </Link>
+          <Link
+            href="/contact"
+            className="inline-flex items-center gap-2 px-8 py-4 border border-gray-700 hover:border-gray-500 text-gray-300 hover:text-white font-semibold rounded-xl transition-colors"
+          >
+            Have Questions? Contact Us
           </Link>
         </div>
       </div>

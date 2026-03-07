@@ -1,5 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Shield, Lock, TrendingUp, BookOpen, Activity, FlaskConical, ExternalLink, Layers, Globe, DollarSign, Zap, Target, TrendingDown, Users, Building2 } from "lucide-react";
+import LiveChainStats from "@/components/LiveChainStats";
 
 export default function DAppPage() {
   return (
@@ -20,9 +22,10 @@ export default function DAppPage() {
               177/177 Tests Passing
             </span>
             <span className="px-3 py-1 rounded-full border text-xs font-medium bg-purple-500/10 text-purple-400 border-purple-500/20">
-              3 Peer-Reviewed Papers
+              6 SSRN Papers
             </span>
           </div>
+          <Image src="/baraka-logo.png" alt="Baraka" width={220} height={220} className="mb-6" />
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-4">
             <span className="gradient-text">Baraka</span>
           </h1>
@@ -65,14 +68,14 @@ export default function DAppPage() {
         <div className="bg-gray-900 border border-green-500/20 rounded-2xl p-7 mb-8">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <h2 className="text-white font-bold text-lg">Where We Are Today — February 2026</h2>
+            <h2 className="text-white font-bold text-lg">Where We Are Today — March 2026</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {[
               { value: "13", label: "Contracts", sub: "Deployed + verified on Arbitrum Sepolia" },
               { value: "177", label: "Tests Passing", sub: "Unit + integration + fuzz, 1000 runs" },
               { value: "8", label: "Live App Routes", sub: "Trade, Markets, Sukuk, Takaful, Credit, Dashboard..." },
-              { value: "3", label: "Research Papers", sub: "Ahmed, Bhuyan & Islam 2026" },
+              { value: "6", label: "SSRN Papers", sub: "All published March 2026 — baraka.arcusquantfund.com" },
             ].map((s) => (
               <div key={s.label} className="bg-gray-800/60 border border-gray-700/50 rounded-xl p-4 text-center">
                 <div className="text-2xl font-bold text-green-400 mb-0.5">{s.value}</div>
@@ -83,12 +86,12 @@ export default function DAppPage() {
           </div>
           <div className="space-y-2">
             {[
-              { done: true, text: "Core protocol (9 contracts): FundingEngine, ShariahGuard, OracleAdapter, CollateralVault, PositionManager, LiquidationEngine, InsuranceFund, GovernanceModule, BRKXToken" },
-              { done: true, text: "Product stack (4 contracts): EverlastingOption pricing engine + TakafulPool (L3 insurance) + PerpetualSukuk (L2 capital market) + iCDS (L4 credit derivative)" },
+              { done: true, text: "9 core contracts: FundingEngine, ShariahGuard, OracleAdapter, CollateralVault, PositionManager, LiquidationEngine, InsuranceFund, GovernanceModule, governance token" },
+              { done: true, text: "4 product contracts: EverlastingOption (L1.5 pricing engine), TakafulPool (L3 insurance), PerpetualSukuk (L2 capital markets), iCDS (L4 credit derivative)" },
               { done: true, text: "Fatwa on-chain: ShariahGuard.fatwaIPFS[USDC] = QmVztQvWd5QkD5euhiUb2ycwr2SHL928Y2AC9rnWCMn7c2 (Pinata IPFS, registered Feb 28 2026)" },
               { done: true, text: "Full-stack frontend at baraka.arcusquantfund.com — 8 pages: Trade, Markets, Sukuk, Takaful, Credit, Dashboard, Transparency, Home" },
               { done: true, text: "The Graph subgraph v0.0.2 — all 7 data sources indexed, L2/L3/L4 events tracked" },
-              { done: true, text: "3 academic papers, integrated 4-layer simulation (cadCAD + RL + Game Theory + Mechanism Design), 0/5 insolvency across all runs" },
+              { done: true, text: "6 SSRN papers: ι=0 perpetuals · κ-rate credit equivalence · riba-free monetary framework · tabarru pricing · Islamic CDS · integrated simulation framework. Integrated 4-layer simulation (cadCAD + RL + Game Theory + Mechanism Design), 0/5 insolvency across all runs" },
               { done: false, text: "Formal fatwa from AAOIFI-certified scholar board (replacing testnet placeholder)" },
               { done: false, text: "External smart contract audit (Certik / OpenZeppelin)" },
               { done: false, text: "Mainnet launch on Arbitrum One, institutional outreach, first real TVL" },
@@ -102,6 +105,9 @@ export default function DAppPage() {
             ))}
           </div>
         </div>
+
+        {/* Live on-chain stats */}
+        <LiveChainStats />
 
         {/* Three pillars */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-16">
@@ -160,7 +166,7 @@ export default function DAppPage() {
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
           <h2 className="text-white font-bold text-xl mb-4">The Solution</h2>
           <p className="text-gray-400 leading-relaxed mb-5">
-            Ackerer, Hugonnier & Jermann (2024) proved mathematically that perpetual futures
+            Ackerer, Hugonnier & Jermann (2025, <em>Mathematical Finance</em>) proved mathematically that perpetual futures
             converge to spot price using only the premium term — no interest required.
             When ι = 0 and funding rates are symmetric,{" "}
             <strong className="text-white">f_t = x_t exactly.</strong>
@@ -338,7 +344,7 @@ export default function DAppPage() {
                 Most &quot;Islamic&quot; financial products are retrofitted versions of conventional instruments —
                 legal structures designed to achieve the same economic outcome while technically avoiding riba.
                 Scholars criticise them as &quot;form over substance.&quot; Baraka is different. We derived the
-                mathematics from first principles: Ackerer (2024) proved ι=0 is not a setting but a
+                mathematics from first principles: Ackerer (2025, <em>Mathematical Finance</em>) proved ι=0 is not a setting but a
                 structural necessity for spot convergence. Ahmed, Bhuyan & Islam (2026) then showed
                 that this same κ-parameter prices every Islamic financial instrument — sukuk, takaful,
                 iCDS — without reference to any interest rate. The protocol does not avoid riba.
@@ -424,12 +430,12 @@ export default function DAppPage() {
               },
               {
                 title: "Academic Moat",
-                desc: "3 peer-reviewed papers + Ackerer (2024) Mathematical Finance foundation + Dr. Rafiq Bhuyan (80+ publications, Fulbright Scholar, Monarch Business School). The proof of compliance is in the academic literature — not a marketing claim.",
+                desc: "6 SSRN working papers + Ackerer (2025, Mathematical Finance) foundation + Dr. Rafiq Bhuyan (80+ publications, Fulbright Scholar, Monarch Business School). The proof of compliance is in the academic literature — not a marketing claim.",
                 icon: <BookOpen size={16} className="text-gold" />,
               },
               {
                 title: "First-Mover Moat",
-                desc: "No Shariah-certified perpetual futures protocol exists. We have been building since early 2025. By the time a competitor could build, audit, and certify an equivalent protocol, Baraka will have TVL, institutional relationships, and a live subgraph of historical data.",
+                desc: "No Shariah-certified perpetual futures protocol exists anywhere. We have been building since early 2025 — 13 contracts, 6 published papers, and a live testnet before any competitor has a whitepaper. The mathematical proof, the academic record, and the first-mover network effects compound over time.",
                 icon: <TrendingUp size={16} className="text-gold" />,
               },
             ].map((m) => (
@@ -473,7 +479,7 @@ export default function DAppPage() {
                 {
                   name: "Shehzad Ahmed",
                   role: "Founder & CEO",
-                  bio: "Computational finance. Designed and built all 13 contracts, 177 tests, 3 academic papers, the entire simulation framework, and the full-stack application. Arcus Quant Fund founder.",
+                  bio: "Computational finance. Designed and built all 13 contracts, 177 tests, 6 SSRN papers, the entire simulation framework, and the full-stack application. Arcus Quant Fund founder.",
                 },
                 {
                   name: "Dr. Rafiq Bhuyan",
@@ -507,33 +513,43 @@ export default function DAppPage() {
               <BookOpen size={20} className="text-gold" />
             </div>
             <div>
-              <h2 className="text-white font-bold text-lg mb-2">Built on Peer-Reviewed Research</h2>
+              <h2 className="text-white font-bold text-lg mb-2">Built on Published Research</h2>
               <p className="text-gray-400 text-sm leading-relaxed mb-3">
                 Baraka is the implementation layer of published academic research. The theoretical
-                foundation — spot convergence at ι=0 — is from Ackerer, Hugonnier & Jermann (2024)
-                in <em>Mathematical Finance</em>. Our own research programme has produced three papers
+                foundation — spot convergence at ι=0 — is from Ackerer, Hugonnier & Jermann (2025)
+                in <em>Mathematical Finance</em>. Our own research programme has produced six SSRN working papers
                 validating the protocol from complementary angles.
               </p>
               <div className="space-y-2 mb-3">
                 {[
-                  { n: "Paper I", title: "Zero-Interest Perpetual Futures: A Shariah-Compliant Derivatives Framework", desc: "First taxonomy of all existing perpetual funding formulas under riba / gharar / maysir. Proves ι=0 is the unique compliant parameterisation. Mathematical proof that premium-only funding satisfies all three Islamic prohibitions." },
-                  { n: "Paper II", title: "Random Stopping Time Equivalence and the κ-Rate in Islamic Finance", desc: "Shows Ackerer's random stopping time θ_t is mathematically equivalent to a credit event τ, replacing r with κ (no-riba convergence intensity). Foundation for sukuk coupon pricing, takaful premium calculation, and iCDS premium mechanics — all without interest." },
-                  { n: "Paper III", title: "The κ-Rate: A Riba-Free Monetary Alternative + Appendix A (Stochastic κ Dynamics)", desc: "Proposes κ as the first rigorous, observable, riba-free alternative to the conventional interest rate. Constructs the κ-yield curve κ(T) = 1/T — the Islamic analog of CIR. Appendix A: stochastic κ as CIR-type SDE (dκ = α(κ̄−κ)dt + σ√κ dW), closed-form κ-bond pricing via Riccati ODEs, normal/inverted/flat κ-yield regimes. Applications: sukuk benchmark rate, Islamic monetary policy signalling." },
+                  { n: "Paper 1", ssrn: "6322778", title: "Zero-Interest Perpetual Futures: A Shariah-Compliant Derivatives Framework", desc: "First taxonomy of all existing perpetual funding formulas under riba / gharar / maysir. Proves ι=0 is the unique compliant parameterisation. Mathematical proof that premium-only funding satisfies all three Islamic prohibitions." },
+                  { n: "Paper 2", ssrn: "6322858", title: "Random Stopping Time Equivalence and the κ-Rate in Islamic Finance", desc: "Shows Ackerer's random stopping time θ_t is mathematically equivalent to a credit event τ, replacing r with κ (no-riba convergence intensity). Foundation for sukuk coupon pricing, takaful premium calculation, and iCDS premium mechanics — all without interest." },
+                  { n: "Paper 2A", ssrn: "6322938", title: "The κ-Rate: A Riba-Free Monetary Alternative", desc: "Proposes κ as the first rigorous, observable, riba-free alternative to the conventional interest rate. Constructs the κ-yield curve κ(T) = 1/T — the Islamic analog of CIR. Stochastic κ dynamics, closed-form bond pricing via Riccati ODEs. Applications: sukuk benchmark rate, Islamic monetary policy signalling." },
+                  { n: "Paper 2B", ssrn: "6323459", title: "Tabarru Pricing and Takaful Pool Dynamics", desc: "κ-priced tabarru contributions for on-chain mutual insurance. Proves the takaful premium formula tabarru = quotePut × coverage / WAD eliminates riba from insurance. 16-scenario simulation of pool stability under BTC volatility." },
+                  { n: "Paper 2C", ssrn: "6323519", title: "Islamic Credit Default Swaps: iCDS Implementation", desc: "First rigorous derivation of Islamic CDS pricing at ι=0. Proves s* = κ(1−δ) is the unique compliant CDS spread. Full iCDS contract implementation analysis, riba premium formula, 6-jurisdiction legal analysis, on-chain credit event mechanics." },
+                  { n: "Paper 3", ssrn: "6323618", title: "An Integrated Simulation Framework for Decentralised Finance Protocols", desc: "cadCAD + Reinforcement Learning + Game Theory + Mechanism Design — 4-layer closed-loop IES framework. Theorem: ι=0 is the unique Shariah-compliant Nash Equilibrium. 5 episodes × 720 steps, 0/5 insolvency, MD converged to Pareto-optimal parameters." },
                 ].map((p) => (
-                  <div key={p.n} className="bg-gray-800/40 rounded-lg p-3">
+                  <a
+                    key={p.n}
+                    href={`https://papers.ssrn.com/sol3/papers.cfm?abstract_id=${p.ssrn}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block bg-gray-800/40 rounded-lg p-3 hover:bg-gray-800/60 transition-colors group"
+                  >
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-gold text-xs font-mono font-semibold">{p.n}</span>
-                      <span className="text-white text-xs font-medium">{p.title}</span>
+                      <span className="text-white text-xs font-medium group-hover:text-gold transition-colors">{p.title}</span>
+                      <span className="text-gray-600 text-xs ml-auto flex-shrink-0">SSRN {p.ssrn} ↗</span>
                     </div>
                     <p className="text-gray-500 text-xs leading-relaxed">{p.desc}</p>
-                  </div>
+                  </a>
                 ))}
               </div>
               <p className="text-gray-400 text-sm leading-relaxed">
-                Three papers. Three validation layers. <span className="text-white font-medium">Proof → simulation → product.</span>{" "}
-                All available at{" "}
-                <a href="https://github.com/Arcus-Quant-Fund/BarakaDapp" target="_blank" rel="noopener noreferrer" className="text-gold hover:text-gold-light underline">
-                  github.com/Arcus-Quant-Fund/BarakaDapp ↗
+                Six papers. Three validation layers. <span className="text-white font-medium">Proof → simulation → product.</span>{" "}
+                All papers linked from{" "}
+                <a href="https://baraka.arcusquantfund.com" target="_blank" rel="noopener noreferrer" className="text-gold hover:text-gold-light underline">
+                  baraka.arcusquantfund.com ↗
                 </a>
               </p>
             </div>
@@ -568,16 +584,16 @@ export default function DAppPage() {
                 label: "Protocol + Product Stack",
                 done: true,
                 items: [
-                  "13 contracts deployed + verified: 9 core (FundingEngine/ShariahGuard/OracleAdapter/CollateralVault/PositionManager/LiquidationEngine/InsuranceFund/GovernanceModule/BRKXToken) + 4 product stack (EverlastingOption/TakafulPool/PerpetualSukuk/iCDS)",
+                  "13 contracts deployed + verified on Arbitrum Sepolia — 9 core protocol + 4 product stack (EverlastingOption, TakafulPool, PerpetualSukuk, iCDS)",
                   "177/177 tests passing — unit + integration + fuzz (1000 runs each) · Slither: 0 HIGH, 0 MEDIUM",
-                  "Fatwa on-chain: ShariahGuard.fatwaIPFS[USDC] = QmVztQvWd5QkD5euhiUb2ycwr2SHL928Y2AC9rnWCMn7c2 (Pinata IPFS, registered Feb 28 2026)",
+                  "Fatwa on-chain: ShariahGuard.fatwaIPFS[USDC] registered on Pinata IPFS (Feb 28 2026)",
                   "Full 8-route frontend: baraka.arcusquantfund.com (Trade, Markets, Sukuk, Takaful, Credit, Dashboard, Transparency, Home)",
                   "The Graph subgraph v0.0.2 — all 7 data sources indexed, L2/L3/L4 events tracked",
                   "Integrated 4-layer simulation: cadCAD + RL + Game Theory + Mechanism Design · 0/5 insolvency across all runs",
-                  "3 academic papers: ι=0 perpetuals · κ-rate credit equivalence · stochastic κ monetary framework — Ahmed, Bhuyan & Islam 2026",
-                  "κ-convergence risk signal: OracleAdapter.getKappaSignal(), 4-tier regime, on-chain KappaAlert events",
-                  "BRKX governance token: 100M supply, hold-based fee tiers (5.0 → 2.5 bps), ERC20Votes+Permit",
-                  "Full codebase public: github.com/Arcus-Quant-Fund/BarakaDapp",
+                  "6 SSRN papers: ι=0 perpetuals · κ-rate credit equivalence · riba-free monetary framework · tabarru pricing · Islamic CDS · integrated simulation framework",
+                  "κ-convergence risk signal: 4-tier regime (Normal → Critical), on-chain KappaAlert events",
+                  "Governance token: 100M fixed supply, hold-based fee tiers (5.0 → 2.5 bps), ERC20Votes+Permit",
+                  "Codebase under private development — available to auditors and institutional partners on request",
                 ],
               },
               {
@@ -589,7 +605,6 @@ export default function DAppPage() {
                   "Replace testnet placeholder IPFS document with signed scholar PDF",
                   "External smart contract audit — Certik or OpenZeppelin (code frozen post-audit)",
                   "Public testnet campaign: bring 1000 wallets to testnet, collect feedback",
-                  "SSRN preprint submission for all 3 papers",
                 ],
               },
               {
@@ -753,7 +768,7 @@ export default function DAppPage() {
             </div>
             <div>
               <h2 className="text-white font-bold text-xl">Live on Arbitrum Sepolia — 13 Contracts</h2>
-              <p className="text-gray-500 text-xs">Deployed Feb 2026 · Product stack deployed Feb 28 2026 · All verified on Arbiscan · <a href="https://github.com/Arcus-Quant-Fund/BarakaDapp" target="_blank" rel="noopener noreferrer" className="underline hover:text-green-400 transition-colors">View Source ↗</a></p>
+              <p className="text-gray-500 text-xs">Deployed Feb 2026 · Product stack deployed Feb 28 2026 · All verified on Arbiscan</p>
             </div>
           </div>
 
@@ -882,14 +897,6 @@ export default function DAppPage() {
               className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
             >
               Launch Trading App <ExternalLink size={18} />
-            </a>
-            <a
-              href="https://github.com/Arcus-Quant-Fund/BarakaDapp"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-8 py-4 border border-gold/30 hover:border-gold text-gold font-semibold rounded-xl transition-colors"
-            >
-              View on GitHub <ExternalLink size={18} />
             </a>
             <Link
               href="/contact"

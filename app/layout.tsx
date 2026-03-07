@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     siteName: "Arcus Quant Fund",
     title: "Arcus Quant Fund — Systematic Algorithmic Trading",
     description:
-      "Systematic quantitative trading fund. Performance-fee-only model. Live algorithmic strategies with a 2.47 Sharpe ratio across crypto perpetual futures.",
+      "Systematic quantitative trading fund. Performance-fee-only model. Live algorithmic strategies across crypto perpetual futures.",
     images: [
       {
         url: "https://arcusquantfund.com/og-image.png",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Arcus Quant Fund — Systematic Algorithmic Trading",
-    description: "Systematic quant fund. Performance-fee-only. 2.47 Sharpe ratio, live since 2025.",
+    description: "Systematic quant fund. Performance-fee-only. Live algorithmic trading since 2025.",
   },
   robots: {
     index: true,

@@ -42,11 +42,11 @@ const features = [
 ];
 
 const steps = [
-  { n: "01", title: "Schedule a Call", desc: "Book a 30-minute intro call. We discuss your goals, risk appetite, and account size." },
-  { n: "02", title: "Sign Agreements", desc: "NDA and pilot agreement signed. You open your own brokerage/exchange account." },
-  { n: "03", title: "API Access", desc: "You grant trade-only API access. We never touch withdrawals." },
-  { n: "04", title: "Bot Goes Live", desc: "Strategy deployed. You get dashboard access to track every trade in real time." },
-  { n: "05", title: "Monthly Reports", desc: "Detailed performance report every month. Performance fee charged on profits only." },
+  { n: "01", title: "Sign Up Online", desc: "Fill in your details, review agreements, and submit your Binance API keys — all self-service." },
+  { n: "02", title: "Instant API Validation", desc: "Our system verifies your Binance permissions in real time. Instant feedback if anything needs adjusting." },
+  { n: "03", title: "Bot Activated", desc: "Once approved, your trading bot is deployed automatically. Dashboard credentials emailed to you." },
+  { n: "04", title: "Trade & Monitor", desc: "Watch every trade, position, and P&L in real time on your private dashboard." },
+  { n: "05", title: "Monthly Reports", desc: "Detailed performance report every month. Performance fee (35%) charged on net profits only." },
 ];
 
 export default function HomePage() {
@@ -69,7 +69,7 @@ export default function HomePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/contact"
+              href="/signup"
               className="px-8 py-4 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               Get Started <ArrowRight size={18} />
@@ -120,7 +120,7 @@ export default function HomePage() {
         <div className="max-w-3xl mx-auto py-20">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold text-white mb-4">How It Works</h2>
-            <p className="text-gray-400">From intro call to live trading in under a week.</p>
+            <p className="text-gray-400">Self-service signup to live trading — fully guided, under 24 hours.</p>
           </div>
           <div className="flex flex-col gap-6">
             {steps.map((s, i) => (
@@ -137,10 +137,10 @@ export default function HomePage() {
           </div>
           <div className="text-center mt-12">
             <Link
-              href="/contact"
+              href="/signup"
               className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
             >
-              Schedule Your Call <ArrowRight size={18} />
+              Get Started — Sign Up Now <ArrowRight size={18} />
             </Link>
           </div>
         </div>

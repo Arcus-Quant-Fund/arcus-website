@@ -16,16 +16,22 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { createServiceClient } from "@/lib/supabase";
 
-function isAuthorized(req: NextRequest): boolean {
-  return req.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}`;
+const ADMIN_DOMAIN = "@arcusquantfund.com";
+
+async function isAuthorized(req: NextRequest): Promise<boolean> {
+  if (req.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}`) return true;
+  const session = await getServerSession(authOptions);
+  return !!(session?.user?.email?.endsWith(ADMIN_DOMAIN));
 }
 
 // ─── POST — record a new capital event ───────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!await isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -35,6 +41,7 @@ export async function POST(req: NextRequest) {
     amount?: number;
     occurred_at?: string;
     notes?: string;
+    confirm?: boolean;
   };
 
   try {
@@ -43,7 +50,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { client_email, event_type, amount, occurred_at, notes } = body;
+  const { client_email, event_type, amount, occurred_at, notes, confirm } = body;
 
   // Validate
   if (!client_email) return NextResponse.json({ error: "client_email required" }, { status: 400 });
@@ -52,6 +59,24 @@ export async function POST(req: NextRequest) {
   }
   if (!amount || amount <= 0) {
     return NextResponse.json({ error: "amount must be a positive number" }, { status: 400 });
+  }
+
+  // Dry-run guard: require explicit confirm to actually write to the database.
+  // This prevents accidental double-submits from double-clicking or script re-runs.
+  if (confirm !== true) {
+    return NextResponse.json({
+      preview:  true,
+      executed: false,
+      message:  "Dry-run — no changes made. Re-send with confirm: true to execute.",
+      would_record: {
+        client_email,
+        event_type,
+        amount,
+        occurred_at: occurred_at ?? new Date().toISOString(),
+        notes:       notes ?? null,
+      },
+      warning: `This will permanently record a ${event_type} of $${amount} USDT for ${client_email}. Verify all fields, then re-send with confirm: true.`,
+    });
   }
 
   const supabase = createServiceClient();
@@ -158,7 +183,7 @@ export async function POST(req: NextRequest) {
 // ─── GET — list capital events for a client ───────────────────────────────────
 
 export async function GET(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!await isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

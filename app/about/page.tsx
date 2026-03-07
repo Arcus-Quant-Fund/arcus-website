@@ -49,6 +49,9 @@ export default function AboutPage() {
                     is deployed, risk is managed, and performance is verified across both traditional
                     and on-chain markets.
                   </p>
+                  <Link href="/founder" className="inline-flex items-center gap-1 text-gold text-sm font-medium hover:text-gold-dark transition-colors">
+                    Read the founder story <ArrowRight size={14} />
+                  </Link>
                 </div>
               </div>
             </div>
@@ -56,8 +59,8 @@ export default function AboutPage() {
             {/* Dr. Bhuyan */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
               <div className="flex items-start gap-6">
-                <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-2xl font-bold text-gold">
-                  RB
+                <div className="flex-shrink-0 w-20 h-20 rounded-full overflow-hidden">
+                  <Image src="/rafiq.jpg" alt="Dr. Rafiq Bhuyan" width={80} height={80} className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-white mb-1">Dr. Rafiq Bhuyan</h2>
@@ -112,8 +115,8 @@ export default function AboutPage() {
             {/* Jahidul */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
               <div className="flex items-start gap-6">
-                <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-2xl font-bold text-gold">
-                  JIB
+                <div className="flex-shrink-0 w-20 h-20 rounded-full overflow-hidden">
+                  <Image src="/jahidul2.jpg" alt="Md. Jahidul Islam Bhuiya" width={80} height={80} className="w-full h-full object-cover object-top" />
                 </div>
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold text-white mb-1">Md. Jahidul Islam Bhuiya</h2>
@@ -189,13 +192,21 @@ export default function AboutPage() {
         {/* CTA */}
         <div className="bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center">
           <h3 className="text-2xl font-bold text-white mb-3">Interested in Working Together?</h3>
-          <p className="text-gray-400 mb-6">We&apos;re selectively onboarding new clients. Minimum account size applies.</p>
-          <Link
-            href="/contact"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
-          >
-            Get in Touch <ArrowRight size={16} />
-          </Link>
+          <p className="text-gray-400 mb-6">We&apos;re selectively onboarding new clients. Standard minimum $6,000 — or start with $1,000 on our 7-month Pilot Programme to verify returns before committing more.</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
+            >
+              Get Started <ArrowRight size={16} />
+            </Link>
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 px-6 py-3 border border-gray-700 hover:border-gray-500 text-gray-300 hover:text-white font-medium rounded-xl transition-colors"
+            >
+              Have Questions?
+            </Link>
+          </div>
         </div>
       </div>
     </div>

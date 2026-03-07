@@ -23,13 +23,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   }
 
-  // Resolve host for server-to-server call
-  const host =
-    req.headers.get("x-forwarded-host") ??
-    req.headers.get("host") ??
-    "localhost:3000";
-  const proto = host.includes("localhost") ? "http" : "https";
-  const cronUrl = `${proto}://${host}/api/cron/${action}`;
+  // Use hardcoded base URL — never trust x-forwarded-host (SSRF vector)
+  const baseUrl = process.env.NEXTAUTH_URL ?? process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000";
+  const cronUrl = `${baseUrl}/api/cron/${action}`;
 
   let cronStatus = 500;
   let cronBody: unknown = {};

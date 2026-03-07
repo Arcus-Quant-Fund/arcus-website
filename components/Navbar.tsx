@@ -50,8 +50,14 @@ export default function Navbar() {
             </Link>
           ))}
           <Link
+            href="/signup"
+            className="ml-1 px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            Get Started
+          </Link>
+          <Link
             href="/dashboard"
-            className="ml-2 px-4 py-2 bg-gold hover:bg-gold-dark text-white text-sm font-medium rounded-lg transition-colors"
+            className="ml-1 px-4 py-2 border border-gray-700 hover:border-gray-500 text-gray-300 hover:text-white text-sm font-medium rounded-lg transition-colors"
           >
             Client Login
           </Link>
@@ -77,9 +83,16 @@ export default function Navbar() {
             </Link>
           ))}
           <Link
-            href="/dashboard"
+            href="/signup"
             onClick={() => setOpen(false)}
             className="px-4 py-2 bg-gold text-white text-sm font-medium rounded-lg text-center"
+          >
+            Get Started
+          </Link>
+          <Link
+            href="/dashboard"
+            onClick={() => setOpen(false)}
+            className="px-4 py-2 border border-gray-700 text-gray-300 text-sm font-medium rounded-lg text-center"
           >
             Client Login
           </Link>

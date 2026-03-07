@@ -13,71 +13,76 @@ async function getTrackRecordData() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
   );
 
-  const [{ data: stats }, { data: trades }, { data: allTrades }, , { data: snapshots }] =
+  const [{ data: stats }, { data: binanceTrades }, { data: binanceAllTrades }] =
     await Promise.all([
       supabase
         .from("performance_stats")
         .select("*")
         .eq("client_id", "eth")
         .single(),
-      // SELL-only trades for equity curve — filtered to the stated period
+      // SELL-only trades for equity curve.
+      // Use source='sqlite' — the bot directly logs pnl_percent as margin ROI%
+      // (price_return × leverage), which is what the equity index needs.
+      // Binance-backfilled records have null or differently-computed pnl_percent.
       supabase
         .from("trade_log")
         .select("timestamp, pnl, pnl_percent, reason, trade_id")
         .eq("client_id", "eth")
         .eq("side", "SELL")
+        .eq("source", "sqlite")
         .not("pnl", "is", null)
         .gte("timestamp", PERIOD_START)
         .order("timestamp", { ascending: true }),
-      // All trades (BUY + SELL) for the 4h chart markers
+      // All trades (BUY + SELL) for the 4h chart markers — sqlite source (always current)
       supabase
         .from("trade_log")
         .select("trade_id, timestamp, side, price, pnl, amount")
         .eq("client_id", "eth")
+        .eq("source", "sqlite")
         .gte("timestamp", PERIOD_START)
         .order("timestamp", { ascending: true }),
-      supabase
-        .from("key_events")
-        .select("event_date, event_type, headline, body, trade_pct, equity_level, color")
-        .eq("client_id", "eth")
-        .order("event_date", { ascending: true }),
-      // Monthly snapshots for Sep 2025+ — used for accurate compound TWR headline metric
-      supabase
-        .from("monthly_snapshots")
-        .select("year, month, opening_balance, gross_pnl")
-        .eq("client_id", "a1121d0e-e945-45c6-8d83-5dc9445d5469")
-        .or("year.gt.2025,and(year.eq.2025,month.gte.9)")
-        .order("year", { ascending: true })
-        .order("month", { ascending: true }),
     ]);
 
-  // Compute compound TWR from monthly snapshots for the stated period.
-  // This is the correct metric: gross_pnl / opening_balance compounded monthly,
-  // independent of deposits/withdrawals and fixed-position-size bias.
-  let twrFactor = 1.0;
-  for (const s of snapshots ?? []) {
-    if (s.opening_balance > 0) {
-      twrFactor *= 1 + s.gross_pnl / s.opening_balance;
-    }
+  // Fallback to all sources if no sqlite records
+  let trades = binanceTrades ?? [];
+  let allTrades = binanceAllTrades ?? [];
+
+  if (trades.length === 0) {
+    const { data: fallback } = await supabase
+      .from("trade_log")
+      .select("timestamp, pnl, pnl_percent, reason, trade_id")
+      .eq("client_id", "eth")
+      .eq("side", "SELL")
+      .not("pnl", "is", null)
+      .gte("timestamp", PERIOD_START)
+      .order("timestamp", { ascending: true });
+    trades = fallback ?? [];
   }
-  const periodTWR = (twrFactor - 1) * 100;
+
+  if (allTrades.length === 0) {
+    const { data: fallback } = await supabase
+      .from("trade_log")
+      .select("trade_id, timestamp, side, price, pnl, amount")
+      .eq("client_id", "eth")
+      .gte("timestamp", PERIOD_START)
+      .order("timestamp", { ascending: true });
+    allTrades = fallback ?? [];
+  }
 
   return {
     stats: stats ?? null,
-    trades: trades ?? [],
-    allTrades: allTrades ?? [],
-    periodTWR,
+    trades,
+    allTrades,
   };
 }
 
 export default async function TrackRecordPage() {
-  const { stats, trades, allTrades, periodTWR } = await getTrackRecordData();
+  const { stats, trades, allTrades } = await getTrackRecordData();
   return (
     <TrackRecordClient
       stats={stats}
       trades={trades}
       allTrades={allTrades}
-      periodTWR={periodTWR}
     />
   );
 }

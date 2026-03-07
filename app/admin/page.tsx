@@ -7,7 +7,7 @@ import QuickActions from "./QuickActions";
 
 // Any @arcusquantfund.com address can access the admin panel
 const ADMIN_DOMAIN = "@arcusquantfund.com";
-const OPERATING_COSTS_USD = 5000; // servers, AI subs, domain, email — update when costs change
+const OPERATING_COSTS_USD = 160; // servers, AI subs, domain, email — update when costs change
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,6 +28,8 @@ type BotState = {
   leverage: number;
   updated_at: string;
   liq_price: number | null;
+  last_dc_price: number | null;
+  unrealized_pnl: number | null;
 };
 
 type MonthlySnap = {
@@ -149,10 +151,11 @@ export default async function AdminPage({
     { data: prevMonthSnapRows },
     { data: currentMonthCapRows },
     { data: monthStartBalRows },
+    { data: commissionRows },
   ] = await Promise.all([
     supabase.from("clients").select("id, name, email, bot_id, initial_capital").eq("is_active", true),
     supabase.from("monthly_snapshots").select("client_id, opening_balance, closing_balance, gross_pnl, net_pnl, performance_fee, fee_paid, total_trades, total_deposits, total_withdrawals, win_rate, profit_factor").eq("year", year).eq("month", month),
-    supabase.from("bot_state").select("client_id, symbol, position, entry_price, current_amount, leverage, updated_at, liq_price"),
+    supabase.from("bot_state").select("client_id, symbol, position, entry_price, current_amount, leverage, updated_at, liq_price, last_dc_price, unrealized_pnl"),
     supabase.from("capital_events").select("id, client_id, event_type, amount, notes, occurred_at, recorded_by").order("occurred_at", { ascending: false }).limit(20),
     supabase.from("audit_log").select("id, client_id, event_type, amount, description, created_at").order("created_at", { ascending: false }).limit(15),
     // All-time snapshots for fee tracker + continuity check
@@ -175,6 +178,11 @@ export default async function AdminPage({
       .select("client_id, balance, recorded_at")
       .gte("recorded_at", currentMonthStart)
       .order("recorded_at", { ascending: true }),
+    // All-time commissions paid per bot (client_id = bot text id: eth / eth2 / eth4)
+    supabase.from("trade_log")
+      .select("client_id, commission_usdt, pnl")
+      .not("commission_usdt", "is", null)
+      .gt("commission_usdt", 0),
   ]);
 
   const clients     = (clientRows ?? []) as Client[];
@@ -182,6 +190,23 @@ export default async function AdminPage({
   const botStates   = (botRows ?? []) as BotState[];
   const capEvents   = (capitalRows ?? []) as CapitalEvent[];
   const auditLog    = (auditRows ?? []) as AuditEntry[];
+
+  // ── Commission aggregates ──
+  type CommRow = { client_id: string; commission_usdt: number | null; pnl: number | null };
+  const commData = (commissionRows ?? []) as CommRow[];
+  // Commission by bot_id (eth / eth2 / eth4), matched to client via bot_id field
+  const commByBot = new Map<string, number>();
+  for (const r of commData) {
+    commByBot.set(r.client_id, (commByBot.get(r.client_id) ?? 0) + (r.commission_usdt ?? 0));
+  }
+  // All-time gross P&L from trade_log (includes pre-Feb-2026 history for eth)
+  const grossPnlByBot = new Map<string, number>();
+  for (const r of commData) {
+    if (r.pnl != null) {
+      grossPnlByBot.set(r.client_id, (grossPnlByBot.get(r.client_id) ?? 0) + r.pnl);
+    }
+  }
+  const totalCommissions = [...commByBot.values()].reduce((a, b) => a + b, 0);
 
   type AllSnap = {
     client_id: string;
@@ -285,8 +310,9 @@ export default async function AdminPage({
   // ── Live Month-to-Date (MTD) data ─────────────────────────────────────────
   // Opening balance = last monthly_snapshot's closing (= end of previous month).
   // Current equity = live from bot_state.
-  // MTD P&L = (current_equity - opening) - net_capital_this_month
-  //   This is the same Modified Dietz formula the monthly report uses.
+  // MTD Change = current_equity - opening  (raw balance change, no capital adjustment)
+  //   Capital events are shown in a separate column.
+  //   The monthly-report cron uses Modified Dietz for fee calculations.
 
   type PrevSnap = { client_id: string; closing_balance: number };
   type CurCapEv = { client_id: string; event_type: string; amount: number };
@@ -332,11 +358,12 @@ export default async function AdminPage({
     const withdrawals = clientCapEvs.filter(e => e.event_type === "WITHDRAWAL").reduce((s, e) => s + e.amount, 0);
     const netCapital  = deposits - withdrawals;
 
+    // Capital-adjusted MTD P&L: strips out deposits/withdrawals so only
+    // bot-generated profit/loss remains (same Modified Dietz as monthly cron).
     const mtdPnl = (curEquity - opening) - netCapital;
     // Null when no opening baseline — % is meaningless; shows "—" in UI
     const mtdPct = opening > 0 ? (mtdPnl / opening) * 100 : null;
-    // Flag if MTD loss exceeds 30% of opening with no corresponding large recorded withdrawal
-    // (suggests capital outflows missing from capital_events)
+    // Flag if MTD loss exceeds 30% of opening with no capital events explaining it
     const hasMissingCapEvents = opening > 0 && mtdPnl < -opening * 0.30 && Math.abs(netCapital) < Math.abs(mtdPnl) * 0.5;
 
     const age = bot ? ageLabel(bot.updated_at) : null;
@@ -425,11 +452,11 @@ export default async function AdminPage({
                 Live Month-to-Date — {currentMonthLabel}
               </h2>
               <p className="text-gray-600 text-xs mt-0.5">
-                Real-time P&L since month start · opening = last month-end close · P&L = (equity − opening) − net capital movements
+                Month-to-date balance change · opening = last month-end close · MTD = current equity − opening
               </p>
             </div>
             <div className="text-right">
-              <div className="text-xs text-gray-500">Fund MTD P&L</div>
+              <div className="text-xs text-gray-500">Fund MTD Change</div>
               <div className={`text-xl font-bold ${pnlCls(mtdTotalPnl)}`}>
                 {fmtSigned(mtdTotalPnl)}
               </div>
@@ -442,7 +469,7 @@ export default async function AdminPage({
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-900/60 border-b border-gray-700">
-                  {["Client", "Month Opening", "Current Equity", "Capital Flows", "MTD P&L", "MTD %", "Bot"].map(h => (
+                  {["Client", "Month Opening", "Current Equity", "Capital Flows", "MTD Change", "MTD %", "Bot"].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-gray-500 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -507,7 +534,7 @@ export default async function AdminPage({
             { label: "Fees Earned",     val: hasSnaps ? fmt(totalFeesEarned) : "—", sub: "performance fees",                    color: "text-yellow-400" },
             { label: "Fees Collected",  val: hasSnaps ? fmt(totalFeesPaid) : "—",   sub: "received",                            color: "text-green-400" },
             { label: "Outstanding",     val: hasSnaps ? fmt(feesOutstanding) : "—", sub: feesOutstanding > 0 ? "to collect" : "all clear", color: feesOutstanding > 0 ? "text-yellow-400" : "text-green-400" },
-            { label: "Net Income",      val: hasSnaps ? fmtSigned(netIncome) : "—", sub: `after $${(OPERATING_COSTS_USD / 1000).toFixed(0)}k costs`, color: pnlCls(netIncome) },
+            { label: "Net Income",      val: hasSnaps ? fmtSigned(netIncome) : "—", sub: `after $${OPERATING_COSTS_USD} costs`, color: pnlCls(netIncome) },
           ].map((card) => (
             <div key={card.label} className="bg-gray-800/60 border border-gray-700/60 rounded-xl p-4">
               <div className="text-gray-500 text-[11px] mb-1.5">{card.label}</div>
@@ -532,12 +559,7 @@ export default async function AdminPage({
                     <span className="text-gray-400">Performance Fees Earned</span>
                     <span className="text-green-400 font-semibold">+{fmt(totalFeesEarned)}</span>
                   </div>
-                  {totalDeposits > 0 && (
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Client Deposits (this month)</span>
-                      <span className="text-blue-400">{fmt(totalDeposits)}</span>
-                    </div>
-                  )}
+
                   <div className="border-t border-gray-700 pt-2 flex justify-between text-sm font-semibold">
                     <span className="text-gray-300">Gross Revenue</span>
                     <span className="text-white">{fmt(totalFeesEarned)}</span>
@@ -614,7 +636,7 @@ export default async function AdminPage({
             <h2 className="text-yellow-400 text-xs font-bold tracking-widest uppercase">
               Client Status &amp; Bot Health
             </h2>
-            <span className="text-gray-600 text-xs">Live bot data · monthly snapshot data</span>
+            <span className="text-gray-600 text-xs">Live bot equity · {monthLabel} snapshot</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -634,28 +656,45 @@ export default async function AdminPage({
                   const age   = bot ? ageLabel(bot.updated_at) : null;
                   const liveEq = bot?.current_amount ?? null;
 
-                  // Liquidation distance
+                  // Liquidation distance — uses last_dc_price as best current-price proxy
                   let liqDistLabel = "—";
                   let liqDistCls   = "text-gray-500";
-                  if (bot?.liq_price && bot.position === "long" && liveEq != null && bot.entry_price) {
-                    const currentApprox = bot.entry_price; // best proxy without current_price in this view
-                    const dist = ((currentApprox - bot.liq_price) / currentApprox) * 100;
-                    liqDistLabel = `${dist.toFixed(1)}%`;
-                    liqDistCls   = dist < 5 ? "text-red-400 font-bold" : dist < 10 ? "text-yellow-400" : "text-green-400";
+                  if (bot?.liq_price && bot.liq_price > 0 && bot.position === "long") {
+                    const currentPrice = bot.last_dc_price ?? bot.entry_price;
+                    if (currentPrice && currentPrice > 0) {
+                      const dist = ((currentPrice - bot.liq_price) / currentPrice) * 100;
+                      liqDistLabel = `${dist.toFixed(1)}%`;
+                      liqDistCls   = dist < 5 ? "text-red-400 font-bold" : dist < 10 ? "text-yellow-400" : "text-green-400";
+                    }
                   }
 
                   const snap_pnl = snap?.gross_pnl ?? null;
                   const snap_roi = snap && snap.opening_balance > 0 ? (snap.gross_pnl / snap.opening_balance) * 100 : null;
                   const feePaid  = snap?.fee_paid ?? 0;
-                  const isLoss   = snap ? snap.performance_fee === 0 : null;
-                  const isPaid   = snap ? (!isLoss && feePaid >= snap.performance_fee) : null;
 
-                  const statusLabel = isLoss === null ? "—" : isLoss ? "LOSS MONTH" : isPaid ? "PAID ✓" : "PENDING";
-                  const statusCls   =
-                    isLoss === null ? "bg-gray-700/40 text-gray-500"
-                    : isLoss        ? "bg-gray-700/60 text-gray-400"
-                    : isPaid        ? "bg-green-500/20 text-green-400"
-                    :                 "bg-yellow-500/20 text-yellow-400";
+                  // Status logic:
+                  // - No snapshot: "—"
+                  // - performance_fee > 0 & paid: "PAID ✓"
+                  // - performance_fee > 0 & unpaid: "PENDING"
+                  // - performance_fee === 0 & gross_pnl <= 0: "LOSS MONTH" (real loss)
+                  // - performance_fee === 0 & gross_pnl > 0: "PROFIT · NO FEE" (backfill / no report sent)
+                  type StatusKind = "no_snap" | "paid" | "pending" | "loss" | "no_fee";
+                  const statusKind: StatusKind = !snap ? "no_snap"
+                    : snap.performance_fee > 0 && feePaid >= snap.performance_fee ? "paid"
+                    : snap.performance_fee > 0                                    ? "pending"
+                    : snap.gross_pnl > 0                                          ? "no_fee"
+                    :                                                               "loss";
+
+                  const statusLabel = statusKind === "no_snap" ? "—"
+                    : statusKind === "paid"    ? "PAID ✓"
+                    : statusKind === "pending" ? "PENDING"
+                    : statusKind === "no_fee"  ? "PROFIT · NO FEE"
+                    :                           "LOSS MONTH";
+                  const statusCls = statusKind === "no_snap"  ? "bg-gray-700/40 text-gray-500"
+                    : statusKind === "paid"    ? "bg-green-500/20 text-green-400"
+                    : statusKind === "pending" ? "bg-yellow-500/20 text-yellow-400"
+                    : statusKind === "no_fee"  ? "bg-blue-500/20 text-blue-400"
+                    :                           "bg-gray-700/60 text-gray-400";
 
                   return (
                     <tr key={c.id} className="border-b border-gray-700/40 hover:bg-gray-700/15 transition-colors">
@@ -663,8 +702,15 @@ export default async function AdminPage({
                         <div className="text-white text-sm font-semibold">{c.name}</div>
                         <div className="text-gray-600 text-xs">{c.email}</div>
                       </td>
-                      <td className="px-4 py-3 text-white text-sm font-mono font-semibold">
-                        {liveEq != null ? fmt(liveEq) : <span className="text-gray-600">—</span>}
+                      <td className="px-4 py-3">
+                        <div className="text-white text-sm font-mono font-semibold">
+                          {liveEq != null ? fmt(liveEq) : <span className="text-gray-600">—</span>}
+                        </div>
+                        {bot?.unrealized_pnl != null && bot.unrealized_pnl !== 0 && (
+                          <div className={`text-xs font-mono mt-0.5 ${pnlCls(bot.unrealized_pnl)}`}>
+                            {fmtSigned(bot.unrealized_pnl)} unr.
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {age ? (
@@ -806,12 +852,66 @@ export default async function AdminPage({
           </div>
         </div>
 
+        {/* ══ COMMISSION TRACKER ══ */}
+        <div className="bg-gray-800/40 border border-gray-700 rounded-2xl overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+            <div>
+              <h2 className="text-orange-400 text-xs font-bold tracking-widest uppercase">
+                Binance Commissions (All-Time)
+              </h2>
+              <p className="text-gray-600 text-xs mt-0.5">
+                Trading fees paid to Binance — reduces net P&L per client
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-gray-500">Total All Clients</div>
+              <div className="text-orange-400 text-lg font-bold">−{fmt(totalCommissions)}</div>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-900/60 border-b border-gray-700">
+                  {["Client", "Bot", "Gross P&L", "Commissions Paid", "Net P&L", "Fee Drag"].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-gray-500 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {clients.map((c, i) => {
+                  const botId      = c.bot_id ?? "";
+                  const comm       = commByBot.get(botId) ?? 0;
+                  const grossPnl   = grossPnlByBot.get(botId) ?? 0;
+                  const netPnl     = grossPnl - comm;
+                  const feeDragPct = grossPnl > 0 ? (comm / grossPnl) * 100 : null;
+                  return (
+                    <tr key={i} className="border-b border-gray-700/40 hover:bg-gray-700/15 transition-colors">
+                      <td className="px-4 py-3 text-white text-sm font-semibold">{c.name}</td>
+                      <td className="px-4 py-3 text-gray-500 text-xs font-mono">{botId}</td>
+                      <td className={`px-4 py-3 text-sm font-mono ${pnlCls(grossPnl)}`}>{fmtSigned(grossPnl)}</td>
+                      <td className="px-4 py-3 text-orange-400 text-sm font-mono">
+                        {comm > 0 ? `−${fmt(comm)}` : <span className="text-gray-600">—</span>}
+                      </td>
+                      <td className={`px-4 py-3 text-sm font-bold font-mono ${pnlCls(netPnl)}`}>{fmtSigned(netPnl)}</td>
+                      <td className="px-4 py-3 text-sm">
+                        {feeDragPct !== null
+                          ? <span className="text-orange-400/80 text-xs font-mono">{feeDragPct.toFixed(1)}% of gross</span>
+                          : <span className="text-gray-600">—</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* ══ QUICK ACTIONS ══ */}
         <div className="bg-gray-800/40 border border-gray-700 rounded-2xl p-6 mb-6">
           <h2 className="text-yellow-400 text-xs font-bold tracking-widest uppercase mb-4">
             Quick Actions
           </h2>
-          <QuickActions />
+          <QuickActions clients={clients.map(c => ({ id: c.id, name: c.name, email: c.email }))} />
         </div>
 
         {/* ══ ALL-TIME FEE TRACKER ══ */}

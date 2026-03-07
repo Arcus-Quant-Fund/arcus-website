@@ -18,19 +18,24 @@ export default function ContactPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/contact", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    setLoading(false);
+      setLoading(false);
 
-    if (res.ok) {
-      setSuccess(true);
-      setForm({ name: "", email: "", accountSize: "", message: "" });
-    } else {
-      setError("Something went wrong. Please email us directly at contact@arcusquantfund.com");
+      if (res.ok) {
+        setSuccess(true);
+        setForm({ name: "", email: "", accountSize: "", message: "" });
+      } else {
+        setError("Something went wrong. Please email us directly at contact@arcusquantfund.com");
+      }
+    } catch {
+      setLoading(false);
+      setError("Network error — please check your connection and try again.");
     }
   }
 
@@ -69,7 +74,7 @@ export default function ContactPage() {
               title: "WhatsApp",
               desc: "Quick questions? Chat with us on WhatsApp.",
               action: "Message on WhatsApp",
-              href: "https://wa.me/message/arcusquantfund",
+              href: "https://wa.me/8801234567890",
             },
           ].map((c) => (
             <div key={c.title} className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-gold/30 transition-colors">
@@ -141,7 +146,8 @@ export default function ContactPage() {
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 focus:outline-none focus:border-gold transition-colors"
                 >
                   <option value="">Select range</option>
-                  <option value="$10,000 – $25,000">$10,000 – $25,000</option>
+                  <option value="$1,000 – $6,000 (Pilot)">$1,000 – $6,000 (7-Month Pilot)</option>
+                  <option value="$6,000 – $25,000">$6,000 – $25,000</option>
                   <option value="$25,000 – $50,000">$25,000 – $50,000</option>
                   <option value="$50,000 – $100,000">$50,000 – $100,000</option>
                   <option value="$100,000+">$100,000+</option>

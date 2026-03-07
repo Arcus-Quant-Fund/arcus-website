@@ -25,7 +25,7 @@ type PerfStats = {
 type Trade = {
   timestamp: string;
   pnl: number;
-  pnl_percent: number;
+  pnl_percent: number | null;
   reason: string;
   trade_id: string | null;
 };
@@ -39,17 +39,6 @@ type ChartTrade = {
   amount: number | null;
 };
 
-// Editorial context notes by date (YYYY-MM-DD) — market event annotations
-const TRADE_NOTES: Record<string, string> = {
-  "2025-10-11": "XRP flash crash −40%. $16B liquidated. Bot cut and exited.",
-  "2025-10-14": "Re-entered 3 days after crash. Caught recovery.",
-  "2025-10-27": "Equity crosses breakeven — fully recovered.",
-  "2025-11-24": "Take-profit trigger. Largest win in period.",
-  "2026-01-03": "XRP jumps 8% on friendlier SEC signals.",
-  "2026-01-05": "XRP rally continues. Take-profit triggered.",
-  "2026-02-01": "Broad crypto selloff.",
-  "2026-02-06": "XRP rebounds sharply post-selloff. Largest single trade.",
-};
 
 function formatDate(ts: string) {
   const d = new Date(ts.includes("T") ? ts : ts.replace(" ", "T") + "Z");
@@ -67,49 +56,55 @@ export default function TrackRecordClient({
   stats,
   trades,
   allTrades,
-  periodTWR,
 }: {
   stats: PerfStats;
   trades: Trade[];
   allTrades: ChartTrade[];
-  periodTWR: number;
 }) {
-  // Build equity curve from live trade data
+  // Build equity curve from live trade data.
+  // pnl_percent from sqlite records = price_return% × leverage = margin ROI%.
+  // The bot stores this correctly; we compound it directly.
+  const LEVERAGE = 3.5;
   let equity = 100;
   const enrichedTrades = trades.map((t) => {
-    equity = equity * (1 + t.pnl_percent / 100);
-    const dateKey = t.timestamp.slice(0, 10);
+    const marginPct = t.pnl_percent ?? 0;
+    equity = equity * (1 + marginPct / 100);
     // Strip "bnb_" prefix to expose the raw Binance order ID for verification
     const orderId = t.trade_id?.startsWith("bnb_")
       ? t.trade_id.slice(4)
       : (t.trade_id ?? null);
     return {
       ...t,
+      marginPct,
       equity: Math.round(equity * 10000) / 10000,
       date: formatDate(t.timestamp),
-      dateKey,
-      note: TRADE_NOTES[dateKey] ?? "",
       orderId,
     };
   });
 
   const maxEquity = Math.max(...enrichedTrades.map((t) => t.equity), 100);
-  const lastEquity = enrichedTrades.at(-1)?.equity ?? 258.83;
+  const lastEquity = enrichedTrades.at(-1)?.equity ?? 100;
 
-  // Live stats with hardcoded fallback (shown while Supabase table is being created)
-  const totalPnl    = stats?.total_pnl      ?? 1194.89;
-  const pf          = stats?.profit_factor  ?? 2.21;
-  const winRate     = stats?.win_rate       ?? 54.2;
-  const sharpe      = stats?.sharpe_ratio   ?? 2.44;
-  const winTrades   = stats?.win_trades     ?? 13;
-  const lossTrades  = stats?.loss_trades    ?? 11;
-  const totalTrades = stats?.total_trades   ?? 24;
-  const avgWin      = stats?.avg_win_usd    ?? 167.89;
-  const avgLoss     = stats?.avg_loss_usd   ?? 89.78;
-  const bestPnl     = stats?.best_trade_pnl ?? 420.18;
-  const bestDate    = stats?.best_trade_date ?? "Nov 25, 2025";
-  const periodStart = stats?.period_start   ?? "Sep 2025";
-  const periodEnd   = stats?.period_end     ?? "Feb 2026";
+  // Live stats — zero fallbacks so missing data is visible, not masked by stale numbers
+  const totalPnl    = stats?.total_pnl      ?? 0;
+  const pf          = stats?.profit_factor  ?? 0;
+  const winRate     = stats?.win_rate       ?? 0;
+  const sharpe      = stats?.sharpe_ratio   ?? 0;
+  const winTrades   = stats?.win_trades     ?? 0;
+  const lossTrades  = stats?.loss_trades    ?? 0;
+  const avgWin      = stats?.avg_win_usd    ?? 0;
+  const avgLoss     = stats?.avg_loss_usd   ?? 0;
+  const bestPnl     = stats?.best_trade_pnl ?? 0;
+  const bestDate    = stats?.best_trade_date ?? "—";
+
+  // Derive count and period from live trade data — avoids stale performance_stats cache
+  const totalTrades = trades.length > 0 ? trades.length : (stats?.total_trades ?? 0);
+  const periodStart = trades.length > 0
+    ? new Date(trades[0].timestamp).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+    : (stats?.period_start ?? "—");
+  const periodEnd = trades.length > 0
+    ? new Date(trades[trades.length - 1].timestamp).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+    : (stats?.period_end ?? "Feb 2026");
 
   const updatedStr = stats?.updated_at
     ? formatUpdated(stats.updated_at)
@@ -187,8 +182,8 @@ export default function TrackRecordClient({
             <div className="flex items-end gap-1 h-32">
               {displayTrades.map((t, i) => {
                 const heightPct = (t.equity / (maxEquity * 1.05)) * 100;
-                const isWin = t.pnl_percent > 0;
-                const isSpecial = Math.abs(t.pnl_percent) > 20;
+                const isWin = t.marginPct > 0;
+                const isSpecial = Math.abs(t.marginPct) > 20;
                 return (
                   <div
                     key={i}
@@ -205,11 +200,10 @@ export default function TrackRecordClient({
                     />
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-gray-800 border border-gray-700 rounded-xl p-3 text-xs text-gray-300 shadow-xl z-50 hidden group-hover:block pointer-events-none whitespace-nowrap">
                       <div className="font-semibold text-white mb-1">{t.date}</div>
-                      <div className={t.pnl_percent > 0 ? "text-green-400" : "text-red-400"}>
-                        {t.pnl_percent > 0 ? "+" : ""}{t.pnl_percent.toFixed(2)}%
+                      <div className={t.marginPct > 0 ? "text-green-400" : "text-red-400"}>
+                        {t.marginPct > 0 ? "+" : ""}{t.marginPct.toFixed(2)}%
                       </div>
                       <div className="text-gray-400">Equity: {t.equity.toFixed(1)}</div>
-                      {t.note && <div className="text-gray-500 mt-1 text-xs whitespace-normal">{t.note}</div>}
                     </div>
                   </div>
                 );
@@ -276,28 +270,21 @@ export default function TrackRecordClient({
             </div>
             <div className="space-y-1">
               {displayTrades.map((t, i) => {
-                const unlevPct = t.pnl_percent / 3.5;
+                const unlevPct = t.marginPct / LEVERAGE;
                 return (
                 <div
                   key={i}
-                  className={`flex items-center justify-between py-2 px-3 rounded-lg ${
-                    t.note
-                      ? "bg-gray-800/60 border border-gray-700/50"
-                      : "hover:bg-gray-800/30 transition-colors"
-                  }`}
+                  className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-800/30 transition-colors"
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className={`flex-shrink-0 w-5 h-5 rounded flex items-center justify-center ${
-                      t.pnl_percent > 0 ? "bg-green-500/20" : "bg-red-500/20"
+                      t.marginPct > 0 ? "bg-green-500/20" : "bg-red-500/20"
                     }`}>
-                      {t.pnl_percent > 0
+                      {t.marginPct > 0
                         ? <TrendingUp size={11} className="text-green-400" />
                         : <TrendingDown size={11} className="text-red-400" />}
                     </div>
                     <span className="text-gray-400 text-xs w-24 flex-shrink-0">{t.date}</span>
-                    {t.note && (
-                      <span className="text-gray-600 text-xs truncate hidden md:block">{t.note}</span>
-                    )}
                   </div>
                   <div className="flex items-center gap-4 flex-shrink-0">
                     <span className={`text-xs w-16 text-right ${
@@ -306,9 +293,9 @@ export default function TrackRecordClient({
                       {unlevPct > 0 ? "+" : ""}{unlevPct.toFixed(2)}%
                     </span>
                     <span className={`text-sm font-semibold w-20 text-right ${
-                      t.pnl_percent > 0 ? "text-green-400" : "text-red-400"
+                      t.marginPct > 0 ? "text-green-400" : "text-red-400"
                     }`}>
-                      {t.pnl_percent > 0 ? "+" : ""}{t.pnl_percent.toFixed(2)}%
+                      {t.marginPct > 0 ? "+" : ""}{t.marginPct.toFixed(2)}%
                     </span>
                     <span className="text-gray-500 text-xs w-14 text-right">
                       {t.equity.toFixed(1)}
@@ -460,8 +447,7 @@ export default function TrackRecordClient({
         <div className="bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center mb-16">
           <h3 className="text-2xl font-bold text-white mb-3">Apply for Access</h3>
           <p className="text-gray-400 mb-6 max-w-sm mx-auto">
-            Minimum $10,000. We deploy the same strategy on your Binance account
-            via trade-only API. Your capital stays in your account at all times.
+            Standard minimum $6,000. Or start with just $1,000 on our 7-month Pilot Programme — verify our returns with real capital before committing more. We deploy on your Binance account via trade-only API. Your capital stays in your account at all times.
           </p>
           <Link
             href="/contact"

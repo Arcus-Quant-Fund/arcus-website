@@ -1216,14 +1216,14 @@ export async function GET(req: NextRequest) {
     try {
       if (!client.bot_id || !client.email) { results.skipped++; continue; }
 
-      // Trades for the month — prefer source='binance' (authoritative fill data,
-      // deduplicates sqlite vs binance duplicates). Falls back to all sources
-      // if no binance records exist (e.g. a new client not yet synced).
+      // Trades for the month — use source='sqlite' (synced every 60s, always current).
+      // The one-time Binance fill backfill is stale. Falls back to all sources
+      // if no sqlite records exist (e.g. a new client not yet synced).
       let { data: tradeRows } = await supabase
         .from("trade_log")
         .select("trade_id, timestamp, symbol, side, price, quantity, amount, pnl, reason")
         .eq("client_id", client.bot_id)
-        .eq("source", "binance")
+        .eq("source", "sqlite")
         .gte("timestamp", startISO)
         .lte("timestamp", endISO)
         .order("timestamp", { ascending: true });

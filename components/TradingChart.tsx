@@ -51,6 +51,11 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
   const chartRef = useRef<IChartApi | null>(null);
   const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
 
+  // Stabilize botState dep — only rebuild chart when values that affect rendering actually change
+  const botStateKey = botState
+    ? `${botState.extreme_price}|${botState.is_uptrend}|${botState.last_dc_price}|${botState.entry_price}|${botState.position}|${botState.leverage}`
+    : "null";
+
   useEffect(() => {
     if (!containerRef.current || priceData.length === 0) return;
 
@@ -234,7 +239,8 @@ export default function TradingChart({ priceData, trades, botState, symbol = "XR
       observer.disconnect();
       chart.remove();
     };
-  }, [priceData, trades, botState]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceData, trades, botStateKey]);
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
