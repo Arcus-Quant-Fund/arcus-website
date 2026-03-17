@@ -5,11 +5,13 @@ import LiveChainStats from "@/components/LiveChainStats";
 
 export default function DAppPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] pt-24 px-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#0a0a0a] bg-grid pt-24 px-6 relative overflow-hidden">
+      <div className="glow-orb-gold" style={{ top: "-200px", right: "-100px" }} />
+      <div className="glow-orb-blue" style={{ bottom: "400px", left: "-200px" }} />
+      <div className="max-w-4xl mx-auto relative">
 
         {/* Hero */}
-        <div className="mb-16">
+        <div className="mb-16 animate-in">
           <div className="flex items-center gap-3 mb-6 flex-wrap">
             <span className="px-3 py-1 rounded-full border text-xs font-medium bg-green-500/10 text-green-400 border-green-500/20 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
@@ -25,8 +27,8 @@ export default function DAppPage() {
               6 SSRN Papers
             </span>
           </div>
-          <Image src="/baraka-logo.png" alt="Baraka" width={220} height={220} className="mb-6" />
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-4">
+          <Image src="/baraka-logo.webp" alt="Baraka" width={220} height={220} className="mb-6" />
+          <h1 className="text-5xl md:text-7xl font-black text-white mb-4">
             <span className="gradient-text">Baraka</span>
           </h1>
           <p className="text-xl text-gray-300 font-medium mb-5">
@@ -43,7 +45,7 @@ export default function DAppPage() {
               href="https://baraka.arcusquantfund.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-black font-semibold rounded-xl transition-all hover:shadow-[0_6px_24px_rgba(248,172,7,0.35)] hover:-translate-y-0.5"
             >
               Launch Trading App <ExternalLink size={16} />
             </a>
@@ -65,7 +67,7 @@ export default function DAppPage() {
         </div>
 
         {/* Progress Summary — How Far We've Come */}
-        <div className="bg-gray-900 border border-green-500/20 rounded-2xl p-7 mb-8">
+        <div className="animate-in bg-gray-900 border border-green-500/20 rounded-2xl p-7 mb-8">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
             <h2 className="text-white font-bold text-lg">Where We Are Today — March 2026</h2>
@@ -110,7 +112,7 @@ export default function DAppPage() {
         <LiveChainStats />
 
         {/* Three pillars */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-16">
+        <div className="animate-in grid grid-cols-1 md:grid-cols-3 gap-5 mb-16">
           {[
             {
               icon: <Shield size={20} className="text-gold" />,
@@ -128,7 +130,7 @@ export default function DAppPage() {
               desc: "Maximum 5× leverage enforced by the ShariahGuard contract. Maysir is mitigated by design. The Shariah board multisig controls this limit — token holders cannot override it.",
             },
           ].map((p) => (
-            <div key={p.title} className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <div key={p.title} className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-gold/25 hover:-translate-y-1 transition-all duration-300">
               <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center mb-4">
                 {p.icon}
               </div>
@@ -139,7 +141,7 @@ export default function DAppPage() {
         </div>
 
         {/* The Problem */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
+        <div className="animate-in bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
           <h2 className="text-white font-bold text-xl mb-4">The Problem</h2>
           <p className="text-gray-400 leading-relaxed mb-4">
             Every major centralised exchange — Binance, Bybit, OKX, dYdX — embeds a fixed interest
@@ -163,7 +165,7 @@ export default function DAppPage() {
         </div>
 
         {/* The Solution */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
+        <div className="animate-in bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
           <h2 className="text-white font-bold text-xl mb-4">The Solution</h2>
           <p className="text-gray-400 leading-relaxed mb-5">
             Ackerer, Hugonnier & Jermann (2025, <em>Mathematical Finance</em>) proved mathematically that perpetual futures
@@ -204,7 +206,7 @@ export default function DAppPage() {
         </div>
 
         {/* What We've Built — Layer by Layer */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
+        <div className="animate-in bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
           <div className="flex items-start gap-4 mb-6">
             <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
               <Layers size={20} className="text-gold" />
@@ -293,7 +295,7 @@ export default function DAppPage() {
         </div>
 
         {/* Why This Changes the World */}
-        <div className="bg-gray-900 border border-gold/20 rounded-2xl p-7 mb-8">
+        <div className="animate-in bg-gray-900 border border-gold/20 rounded-2xl p-7 mb-8">
           <div className="flex items-start gap-4 mb-6">
             <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
               <Globe size={20} className="text-gold" />
@@ -371,7 +373,7 @@ export default function DAppPage() {
         </div>
 
         {/* Note to Investors */}
-        <div className="bg-gray-900 border border-gold/30 rounded-2xl p-7 mb-8">
+        <div className="animate-in bg-gray-900 border border-gold/30 rounded-2xl p-7 mb-8">
           <div className="flex items-start gap-4 mb-6">
             <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
               <DollarSign size={20} className="text-gold" />
@@ -507,7 +509,7 @@ export default function DAppPage() {
         </div>
 
         {/* Research foundation */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
+        <div className="animate-in bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0 mt-0.5">
               <BookOpen size={20} className="text-gold" />
@@ -557,14 +559,14 @@ export default function DAppPage() {
         </div>
 
         {/* Market size */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-16">
+        <div className="animate-in grid grid-cols-1 md:grid-cols-4 gap-5 mb-16">
           {[
             { value: "1.8B", label: "Muslims globally", sub: "Largest underserved demographic in capital markets" },
             { value: "$3T+", label: "Islamic finance AUM", sub: "Growing 15–20% annually, projected $6.7T by 2030" },
             { value: "0", label: "Shariah-certified perps", sub: "No compliant protocol exists today — anywhere" },
             { value: "$150B+", label: "Daily perp volume", sub: "Crypto perpetuals — world's fastest-growing derivative" },
           ].map((s) => (
-            <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
+            <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center hover:border-gold/25 hover:-translate-y-1 transition-all duration-300">
               <div className="text-3xl font-bold text-gold mb-1">{s.value}</div>
               <div className="text-white text-sm font-medium mb-0.5">{s.label}</div>
               <div className="text-gray-500 text-xs leading-snug">{s.sub}</div>
@@ -573,8 +575,8 @@ export default function DAppPage() {
         </div>
 
         {/* Roadmap */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
-          <h2 className="text-white font-bold text-xl mb-2">Roadmap</h2>
+        <div className="animate-in bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
+          <h2 className="text-white font-black text-xl mb-2">Roadmap</h2>
           <p className="text-gray-500 text-sm mb-5">What&apos;s done, what&apos;s next, and how far we still have to go.</p>
           <div className="space-y-4">
             {[
@@ -662,7 +664,7 @@ export default function DAppPage() {
         </div>
 
         {/* Economic Simulation */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
+        <div className="animate-in bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
           <div className="flex items-start gap-4 mb-6">
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
               <FlaskConical size={20} className="text-purple-400" />
@@ -761,7 +763,7 @@ export default function DAppPage() {
         </div>
 
         {/* Live Contracts */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
+        <div className="animate-in bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-8 h-8 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center">
               <Activity size={16} className="text-green-400" />
@@ -856,8 +858,8 @@ export default function DAppPage() {
         </div>
 
         {/* Governance */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
-          <h2 className="text-white font-bold text-xl mb-4">Dual-Track Governance</h2>
+        <div className="animate-in bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-8">
+          <h2 className="text-white font-black text-xl mb-4">Dual-Track Governance</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <div className="text-blue-400 text-sm font-semibold mb-2">Technical Track</div>
@@ -880,8 +882,8 @@ export default function DAppPage() {
         </div>
 
         {/* CTA */}
-        <div className="bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center mb-16">
-          <h3 className="text-2xl font-bold text-white mb-3">The World&apos;s First Islamic Financial System On-Chain</h3>
+        <div className="animate-in bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center mb-16">
+          <h3 className="text-2xl font-black text-white mb-3">The World&apos;s First Islamic Financial System On-Chain</h3>
           <p className="text-gray-400 mb-2 max-w-xl mx-auto">
             13 contracts. 177 tests. 3 papers. Perpetuals, sukuk, takaful, and credit derivatives —
             all priced without interest, all on-chain, all live.
@@ -894,7 +896,7 @@ export default function DAppPage() {
               href="https://baraka.arcusquantfund.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-black font-semibold rounded-xl transition-all hover:shadow-[0_6px_24px_rgba(248,172,7,0.35)] hover:-translate-y-0.5"
             >
               Launch Trading App <ExternalLink size={18} />
             </a>

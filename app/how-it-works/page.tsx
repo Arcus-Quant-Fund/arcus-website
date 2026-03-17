@@ -83,11 +83,13 @@ const faqs = [
 
 export default function HowItWorksPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] pt-24 px-6">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#0a0a0a] bg-grid pt-24 px-6 relative overflow-hidden">
+      <div className="glow-orb-gold" style={{ top: "-200px", right: "-100px" }} />
+      <div className="glow-orb-blue" style={{ bottom: "400px", left: "-200px" }} />
+      <div className="max-w-3xl mx-auto relative">
         {/* Header */}
-        <div className="mb-16 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+        <div className="mb-16 text-center animate-in">
+          <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
             How It <span className="gradient-text">Works</span>
           </h1>
           <p className="text-gray-400 text-lg">From signup to live trading — self-service, fully guided, under 24 hours.</p>
@@ -95,17 +97,17 @@ export default function HowItWorksPage() {
 
         {/* Steps */}
         <div className="relative mb-20">
-          <div className="absolute left-5 top-0 bottom-0 w-px bg-gray-800" />
-          <div className="flex flex-col gap-10">
-            {steps.map((s) => (
-              <div key={s.n} className="flex gap-6 relative">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gold flex items-center justify-center text-white font-bold text-sm z-10">
+          <div className="absolute left-5 top-0 bottom-0 w-px bg-gradient-to-b from-gold/40 via-gray-800 to-transparent" />
+          <div className="flex flex-col gap-6">
+            {steps.map((s, i) => (
+              <div key={s.n} className={`animate-in animate-delay-${(i % 4) + 1} flex gap-5 items-start group`}>
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-900 border border-gold/30 group-hover:border-gold/60 group-hover:bg-gold/8 flex items-center justify-center text-gold font-bold text-xs transition-all relative z-10">
                   {s.n}
                 </div>
-                <div className="pt-1 pb-2">
-                  <h3 className="text-white font-bold text-lg mb-2">{s.title}</h3>
-                  <p className="text-gray-400 leading-relaxed mb-2">{s.desc}</p>
-                  <p className="text-gold/70 text-sm">{s.detail}</p>
+                <div className="bg-gray-900/50 border border-gray-800 group-hover:border-gray-700 rounded-2xl p-5 flex-1 transition-colors">
+                  <h3 className="text-white font-semibold text-sm mb-1">{s.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed mb-2">{s.desc}</p>
+                  <p className="text-gold/70 text-xs">{s.detail}</p>
                 </div>
               </div>
             ))}
@@ -113,8 +115,8 @@ export default function HowItWorksPage() {
         </div>
 
         {/* Fee structure */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mb-16">
-          <h2 className="text-2xl font-bold text-white mb-6">Fee Structure</h2>
+        <div className="animate-in bg-gray-900 border border-gray-800 rounded-2xl p-8 mb-16">
+          <h2 className="text-2xl font-black text-white mb-6">Fee Structure</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: "Management Fee", value: "0%" },
@@ -134,11 +136,11 @@ export default function HowItWorksPage() {
         </div>
 
         {/* FAQs */}
-        <div className="mb-16">
-          <h2 className="text-2xl font-bold text-white mb-8">Frequently Asked Questions</h2>
+        <div className="mb-16 animate-in">
+          <h2 className="text-2xl font-black text-white mb-8">Frequently Asked Questions</h2>
           <div className="flex flex-col gap-5">
             {faqs.map((f) => (
-              <div key={f.q} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+              <div key={f.q} className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-gold/25 transition-colors">
                 <h3 className="text-white font-semibold mb-2">{f.q}</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">{f.a}</p>
               </div>
@@ -147,10 +149,10 @@ export default function HowItWorksPage() {
         </div>
 
         {/* CTA */}
-        <div className="text-center mb-20 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div className="animate-in text-center mb-20 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             href="/signup"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-black font-semibold rounded-xl transition-all hover:shadow-[0_6px_24px_rgba(248,172,7,0.35)] hover:-translate-y-0.5"
           >
             Get Started — Sign Up Now <ArrowRight size={18} />
           </Link>

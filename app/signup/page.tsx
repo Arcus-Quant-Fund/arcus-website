@@ -768,15 +768,17 @@ export default function SignupPage() {
 
   // ─── Layout ───────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0a0a0a] pt-24 pb-20 px-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-[#0a0a0a] bg-grid pt-24 pb-20 px-4 relative overflow-hidden">
+      <div className="glow-orb-gold" style={{ top: "-200px", right: "-100px", opacity: 0.5 }} />
+      <div className="glow-orb-blue" style={{ bottom: "200px", left: "-200px", opacity: 0.5 }} />
+      <div className="max-w-2xl mx-auto relative">
 
         {/* Header */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-10 animate-in">
           <span className="inline-block text-xs font-semibold text-gold bg-gold/10 border border-gold/20 px-3 py-1 rounded-full mb-4 uppercase tracking-widest">
             Client Onboarding
           </span>
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+          <h1 className="text-3xl md:text-4xl font-black text-white mb-2">
             Activate Your <span className="gradient-text">Trading Bot</span>
           </h1>
           <p className="text-gray-400 text-sm max-w-sm mx-auto">
@@ -786,7 +788,7 @@ export default function SignupPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 md:p-10">
+        <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 md:p-10 backdrop-blur-sm">
           {step < 5 && <Progress />}
           <div>{stepContent[step]}</div>
 

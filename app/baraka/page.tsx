@@ -4,22 +4,24 @@ import { ArrowRight, Shield, BookOpen, ExternalLink } from "lucide-react";
 
 export default function BarakaLandingPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-6 py-20">
-      <div className="max-w-2xl mx-auto text-center">
+    <div className="min-h-screen bg-[#0a0a0a] bg-grid flex flex-col items-center justify-center px-6 py-20 relative overflow-hidden">
+      <div className="glow-orb-gold" style={{ top: "-200px", right: "-100px" }} />
+      <div className="glow-orb-blue" style={{ bottom: "200px", left: "-200px" }} />
+      <div className="max-w-2xl mx-auto text-center relative">
         <Image
-          src="/baraka-logo.png"
+          src="/baraka-logo.webp"
           alt="Baraka"
           width={200}
           height={200}
-          className="mx-auto mb-8"
+          className="mx-auto mb-8 animate-in"
           priority
         />
 
-        <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
+        <h1 className="animate-in animate-delay-1 text-5xl md:text-6xl font-black text-white mb-4">
           <span className="gradient-text">Baraka</span>
         </h1>
 
-        <p className="text-xl text-gray-300 font-medium mb-4">
+        <p className="animate-in animate-delay-2 text-xl text-gray-300 font-medium mb-4">
           The world&apos;s first Shariah-compliant perpetual futures protocol.
         </p>
 
@@ -29,14 +31,14 @@ export default function BarakaLandingPage() {
         </p>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        <div className="animate-in grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           {[
             { label: "Contracts", value: "13" },
             { label: "Tests Passing", value: "177/177" },
             { label: "SSRN Papers", value: "6" },
             { label: "Testnet", value: "Live" },
           ].map((s) => (
-            <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
+            <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center hover:border-gold/25 hover:-translate-y-1 transition-all duration-300">
               <div className="text-xl font-bold text-white mb-1">{s.value}</div>
               <div className="text-gray-500 text-xs">{s.label}</div>
             </div>
@@ -44,13 +46,13 @@ export default function BarakaLandingPage() {
         </div>
 
         {/* Highlights */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
+        <div className="animate-in grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
           {[
             { icon: <Shield className="text-gold" size={20} />, title: "Shariah-Compliant", desc: "Zero interest hardcoded. Mathematically proven riba-free." },
             { icon: <BookOpen className="text-gold" size={20} />, title: "Peer-Reviewed", desc: "6 papers submitted to SSRN. Built on original academic research." },
             { icon: <ExternalLink className="text-gold" size={20} />, title: "On-Chain", desc: "13 smart contracts deployed on Arbitrum Sepolia testnet." },
           ].map((c) => (
-            <div key={c.title} className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-left">
+            <div key={c.title} className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-left hover:border-gold/25 hover:-translate-y-1 transition-all duration-300">
               <div className="mb-3">{c.icon}</div>
               <h3 className="text-white font-semibold text-sm mb-1">{c.title}</h3>
               <p className="text-gray-400 text-xs leading-relaxed">{c.desc}</p>
@@ -59,10 +61,10 @@ export default function BarakaLandingPage() {
         </div>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="animate-in flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             href="https://arcusquantfund.com/dapp"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-black font-semibold rounded-xl transition-all hover:shadow-[0_6px_24px_rgba(248,172,7,0.35)] hover:-translate-y-0.5"
           >
             Learn More <ArrowRight size={18} />
           </Link>

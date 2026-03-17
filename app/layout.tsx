@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import HomeAnimations from "@/components/HomeAnimations";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://arcusquantfund.com"),
@@ -49,6 +51,10 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "https://arcusquantfund.com",
+  },
+  icons: {
+    icon: "/icon.png",
+    apple: "/apple-touch-icon.png",
   },
   verification: {
     // Add Google Search Console verification token here when available
@@ -158,9 +164,12 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
+        <a href="#main-content" className="skip-to-content">Skip to content</a>
         <Navbar />
-        <main>{children}</main>
+        <main id="main-content">{children}</main>
         <Footer />
+        <HomeAnimations />
+        <Analytics />
       </body>
     </html>
   );

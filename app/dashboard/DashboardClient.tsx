@@ -151,7 +151,7 @@ function MetricCard({ label, value, delta, deltaColor = "neutral", sub, tooltip 
   { label: string; value: string; delta?: string; deltaColor?: "positive" | "negative" | "neutral"; sub?: string; tooltip?: string }) {
   const dc = deltaColor === "positive" ? "text-green-400" : deltaColor === "negative" ? "text-red-400" : "text-gray-400";
   return (
-    <div className={`relative bg-gray-800/60 rounded-xl p-4 ${tooltip ? "group cursor-help" : ""}`}>
+    <div className={`relative bg-gray-800/60 rounded-xl p-4 border border-gray-800 hover:border-gray-700 transition-colors ${tooltip ? "group cursor-help" : ""}`}>
       <div className="text-gray-500 text-xs mb-1">{label}</div>
       <div className="text-white font-bold text-lg">{value}</div>
       {delta && <div className={`text-xs mt-0.5 ${dc}`}>{delta}</div>}

@@ -40,11 +40,13 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] pt-24 px-6">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#0a0a0a] bg-grid pt-24 px-6 relative overflow-hidden">
+      <div className="glow-orb-gold" style={{ top: "-200px", right: "-100px" }} />
+      <div className="glow-orb-blue" style={{ bottom: "400px", left: "-200px" }} />
+      <div className="max-w-3xl mx-auto relative">
         {/* Header */}
-        <div className="mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+        <div className="mb-16 animate-in">
+          <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
             Get in <span className="gradient-text">Touch</span>
           </h1>
           <p className="text-gray-400 text-lg">
@@ -53,7 +55,7 @@ export default function ContactPage() {
         </div>
 
         {/* Contact methods */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-14">
+        <div className="animate-in grid grid-cols-1 md:grid-cols-3 gap-5 mb-14">
           {[
             {
               icon: <Calendar className="text-gold" size={22} />,
@@ -77,7 +79,7 @@ export default function ContactPage() {
               href: "/track-record",
             },
           ].map((c) => (
-            <div key={c.title} className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-gold/30 transition-colors">
+            <div key={c.title} className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-gold/25 hover:-translate-y-1 transition-all duration-300">
               <div className="mb-4">{c.icon}</div>
               <h3 className="text-white font-semibold mb-2">{c.title}</h3>
               <p className="text-gray-400 text-sm mb-4 leading-relaxed">{c.desc}</p>
@@ -94,8 +96,8 @@ export default function ContactPage() {
         </div>
 
         {/* Contact form */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 mb-16">
-          <h2 className="text-xl font-bold text-white mb-6">Send a Message</h2>
+        <div className="animate-in bg-gray-900 border border-gray-800 rounded-2xl p-8 mb-16">
+          <h2 className="text-xl font-black text-white mb-6">Send a Message</h2>
 
           {success ? (
             <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
@@ -173,7 +175,7 @@ export default function ContactPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-gold hover:bg-gold-dark text-black font-semibold rounded-xl transition-all hover:shadow-[0_6px_24px_rgba(248,172,7,0.35)] flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading ? <><Loader2 size={16} className="animate-spin" /> Sending…</> : "Send Message"}
               </button>

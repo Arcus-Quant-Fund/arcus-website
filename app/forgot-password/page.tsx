@@ -34,10 +34,11 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6 relative overflow-hidden">
+      <div className="glow-orb-gold" style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)", opacity: 0.4, width: "400px", height: "400px" }} />
+      <div className="w-full max-w-sm relative">
         <div className="flex justify-center mb-8">
-          <Image src="/logo.png" alt="Arcus Quant Fund" width={180} height={60} className="object-contain" />
+          <Image src="/logo.webp" alt="Arcus Quant Fund" width={180} height={60} className="object-contain" />
         </div>
 
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
@@ -69,7 +70,7 @@ export default function ForgotPasswordPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="your@email.com"
                     required
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#f8ac07] transition-colors"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-gold transition-colors"
                   />
                 </div>
 
@@ -78,7 +79,7 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-[#f8ac07] hover:bg-[#e09c06] text-black font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full py-3 bg-gold hover:bg-gold-dark text-black font-semibold rounded-xl transition-all hover:shadow-[0_6px_24px_rgba(248,172,7,0.35)] flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {loading ? <><Loader2 size={16} className="animate-spin" /> Sending…</> : "Send Reset Link"}
                 </button>

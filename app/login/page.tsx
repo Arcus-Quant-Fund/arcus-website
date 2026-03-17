@@ -48,7 +48,7 @@ export default function LoginPage() {
       {success && (
         <div className="fixed inset-0 z-50 bg-[#0a0a0a] flex flex-col items-center justify-center gap-6 animate-fade-in">
           <div className="flex flex-col items-center gap-5 animate-slide-up">
-            <Image src="/logo.png" alt="Arcus Quant Fund" width={160} height={54} className="object-contain opacity-90" />
+            <Image src="/logo.webp" alt="Arcus Quant Fund" width={160} height={54} className="object-contain opacity-90" />
             <CheckCircle2 size={52} className="text-green-400 animate-scale-in" strokeWidth={1.5} />
             <div className="text-center">
               <p className="text-gray-500 text-sm tracking-widest uppercase mb-1">Welcome back</p>
@@ -67,10 +67,11 @@ export default function LoginPage() {
       )}
 
       {/* ── Login form ─────────────────────────────────────────────────────── */}
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6 relative overflow-hidden">
+        <div className="glow-orb-gold" style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)", opacity: 0.4, width: "400px", height: "400px" }} />
         <div className="w-full max-w-sm">
           <div className="flex justify-center mb-8">
-            <Image src="/logo.png" alt="Arcus Quant Fund" width={180} height={60} className="object-contain" />
+            <Image src="/logo.webp" alt="Arcus Quant Fund" width={180} height={60} className="object-contain" />
           </div>
 
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
@@ -118,7 +119,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading || success}
-                className="w-full py-3 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-gold hover:bg-gold-dark text-black font-semibold rounded-xl transition-all hover:shadow-[0_6px_24px_rgba(248,172,7,0.35)] flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading
                   ? <><Loader2 size={16} className="animate-spin" /> Verifying…</>

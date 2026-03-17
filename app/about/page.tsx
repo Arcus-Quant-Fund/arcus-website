@@ -5,11 +5,13 @@ import { ArrowRight, BookOpen, TrendingUp, Award, Users } from "lucide-react";
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] pt-24 px-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#0a0a0a] bg-grid pt-24 px-6 relative overflow-hidden">
+      <div className="glow-orb-gold" style={{ top: "-200px", right: "-100px" }} />
+      <div className="glow-orb-blue" style={{ bottom: "400px", left: "-200px" }} />
+      <div className="max-w-4xl mx-auto relative">
         {/* Header */}
-        <div className="mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
+        <div className="mb-16 animate-in">
+          <h1 className="text-4xl md:text-5xl font-black text-white mb-6">
             About <span className="gradient-text">Arcus</span>
           </h1>
           <p className="text-xl text-gray-400 leading-relaxed max-w-2xl">
@@ -28,10 +30,10 @@ export default function AboutPage() {
           <div className="flex flex-col gap-6">
 
             {/* Shehzad */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
+            <div className="animate-in animate-delay-1 bg-gray-900 border border-gray-800 rounded-2xl p-8 hover:border-gold/25 hover:-translate-y-1 transition-all duration-300">
               <div className="flex items-start gap-6">
                 <div className="flex-shrink-0 w-20 h-20 rounded-full overflow-hidden">
-                  <Image src="/founder.jpg" alt="Shehzad Ahmed" width={80} height={80} className="w-full h-full object-cover" />
+                  <Image src="/founder.webp" alt="Shehzad Ahmed" width={80} height={80} className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-white mb-1">Shehzad Ahmed</h2>
@@ -57,10 +59,10 @@ export default function AboutPage() {
             </div>
 
             {/* Dr. Bhuyan */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
+            <div className="animate-in animate-delay-2 bg-gray-900 border border-gray-800 rounded-2xl p-8 hover:border-gold/25 hover:-translate-y-1 transition-all duration-300">
               <div className="flex items-start gap-6">
                 <div className="flex-shrink-0 w-20 h-20 rounded-full overflow-hidden">
-                  <Image src="/rafiq.jpg" alt="Dr. Rafiq Bhuyan" width={80} height={80} className="w-full h-full object-cover" />
+                  <Image src="/rafiq.webp" alt="Dr. Rafiq Bhuyan" width={80} height={80} className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-white mb-1">Dr. Rafiq Bhuyan</h2>
@@ -113,10 +115,10 @@ export default function AboutPage() {
             </div>
 
             {/* Jahidul */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
+            <div className="animate-in animate-delay-3 bg-gray-900 border border-gray-800 rounded-2xl p-8 hover:border-gold/25 hover:-translate-y-1 transition-all duration-300">
               <div className="flex items-start gap-6">
                 <div className="flex-shrink-0 w-20 h-20 rounded-full overflow-hidden">
-                  <Image src="/jahidul2.jpg" alt="Md. Jahidul Islam Bhuiya" width={80} height={80} className="w-full h-full object-cover object-top" />
+                  <Image src="/jahidul2.webp" alt="Md. Jahidul Islam Bhuiya" width={80} height={80} className="w-full h-full object-cover object-top" />
                 </div>
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold text-white mb-1">Md. Jahidul Islam Bhuiya</h2>
@@ -135,7 +137,7 @@ export default function AboutPage() {
         </div>
 
         {/* Credentials */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-16">
+        <div className="animate-in grid grid-cols-1 md:grid-cols-3 gap-5 mb-16">
           {[
             {
               icon: <TrendingUp className="text-gold" size={20} />,
@@ -145,7 +147,7 @@ export default function AboutPage() {
             { icon: <BookOpen className="text-gold" size={20} />, title: "80+ Research Papers", desc: "Strategic Advisor's published academic output in finance and economics." },
             { icon: <Award className="text-gold" size={20} />, title: "Fulbright Scholar", desc: "Academic credentials and institutional finance experience behind every strategy." },
           ].map((c) => (
-            <div key={c.title} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <div key={c.title} className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-gold/25 hover:-translate-y-1 transition-all duration-300">
               <div className="mb-3">{c.icon}</div>
               <h3 className="text-white font-semibold mb-1">{c.title}</h3>
               <p className="text-gray-400 text-sm">{c.desc}</p>
@@ -154,8 +156,8 @@ export default function AboutPage() {
         </div>
 
         {/* What we do */}
-        <div className="mb-16">
-          <h2 className="text-2xl font-bold text-white mb-6">What Arcus Does</h2>
+        <div className="mb-16 animate-in">
+          <h2 className="text-2xl font-black text-white mb-6">What Arcus Does</h2>
           <div className="space-y-4 text-gray-400 leading-relaxed">
             <p>
               Arcus Quant Fund manages client capital through algorithmic trading strategies across
@@ -190,13 +192,13 @@ export default function AboutPage() {
         </div>
 
         {/* CTA */}
-        <div className="bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center">
-          <h3 className="text-2xl font-bold text-white mb-3">Interested in Working Together?</h3>
+        <div className="animate-in bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center">
+          <h3 className="text-2xl font-black text-white mb-3">Interested in Working Together?</h3>
           <p className="text-gray-400 mb-6">We&apos;re selectively onboarding new clients. Standard minimum $6,000 — or start with $1,000 on our 7-month Pilot Programme to verify returns before committing more.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/signup"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gold hover:bg-gold-dark text-black font-semibold rounded-xl transition-all hover:shadow-[0_6px_24px_rgba(248,172,7,0.35)] hover:-translate-y-0.5"
             >
               Get Started <ArrowRight size={16} />
             </Link>

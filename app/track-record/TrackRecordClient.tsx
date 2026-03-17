@@ -118,12 +118,14 @@ export default function TrackRecordClient({
   const displayTrades = enrichedTrades.length > 0 ? enrichedTrades : null;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] pt-24 px-6">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#0a0a0a] bg-grid pt-24 px-6 relative overflow-hidden">
+      <div className="glow-orb-gold" style={{ top: "-200px", right: "-100px" }} />
+      <div className="glow-orb-blue" style={{ bottom: "400px", left: "-200px" }} />
+      <div className="max-w-3xl mx-auto relative">
 
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+        <div className="mb-12 animate-in">
+          <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
             Track <span className="gradient-text">Record</span>
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl">
@@ -142,7 +144,7 @@ export default function TrackRecordClient({
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        <div className="animate-in grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
             <div className="text-2xl font-bold text-gold mb-1">{(lastEquity - 100) >= 0 ? "+" : ""}{(lastEquity - 100).toFixed(1)}%</div>
             <div className="text-white text-sm font-medium mb-0.5">Strategy Return</div>
@@ -164,7 +166,7 @@ export default function TrackRecordClient({
 
 
         {/* Alpha callout */}
-        <div className="bg-gold/5 border border-gold/20 rounded-2xl p-6 mb-10">
+        <div className="animate-in bg-gold/5 border border-gold/20 rounded-2xl p-6 mb-10">
           <p className="text-white font-semibold text-base mb-2">
             The bot made money in a falling market.
           </p>
@@ -337,8 +339,8 @@ export default function TrackRecordClient({
         )}
 
         {/* Strategy history timeline */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-10">
-          <h2 className="text-white font-bold text-lg mb-5">Strategy History</h2>
+        <div className="animate-in bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-10">
+          <h2 className="text-white font-black text-lg mb-5">Strategy History</h2>
           <div className="space-y-4">
             {[
               {
@@ -391,8 +393,8 @@ export default function TrackRecordClient({
         </div>
 
         {/* Methodology transparency */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-10">
-          <h3 className="text-white font-bold text-lg mb-5">How Every Number Is Calculated</h3>
+        <div className="animate-in bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-10">
+          <h3 className="text-white font-black text-lg mb-5">How Every Number Is Calculated</h3>
           <div className="space-y-5">
             <div>
               <div className="text-gold text-sm font-semibold mb-1">P&amp;L (USD) — actual money made or lost</div>
@@ -449,14 +451,14 @@ export default function TrackRecordClient({
         </div>
 
         {/* CTA */}
-        <div className="bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center mb-16">
-          <h3 className="text-2xl font-bold text-white mb-3">Apply for Access</h3>
+        <div className="animate-in bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center mb-16">
+          <h3 className="text-2xl font-black text-white mb-3">Apply for Access</h3>
           <p className="text-gray-400 mb-6 max-w-sm mx-auto">
             Standard minimum $6,000. Or start with just $1,000 on our 7-month Pilot Programme — verify our returns with real capital before committing more. We deploy on your Binance account via trade-only API. Your capital stays in your account at all times.
           </p>
           <Link
             href="/contact"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-black font-semibold rounded-xl transition-all hover:shadow-[0_6px_24px_rgba(248,172,7,0.35)] hover:-translate-y-0.5"
           >
             Get in Touch <ArrowRight size={18} />
           </Link>

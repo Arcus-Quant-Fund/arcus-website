@@ -4,23 +4,25 @@ import { ArrowRight } from "lucide-react";
 
 export default function FounderPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] pt-24 px-6">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#0a0a0a] bg-grid pt-24 px-6 relative overflow-hidden">
+      <div className="glow-orb-gold" style={{ top: "-200px", right: "-100px" }} />
+      <div className="glow-orb-blue" style={{ bottom: "400px", left: "-200px" }} />
+      <div className="max-w-3xl mx-auto relative">
 
         {/* Header */}
-        <div className="mb-16">
+        <div className="mb-16 animate-in">
           <p className="text-gold text-sm font-semibold tracking-widest uppercase mb-4">Founder Story</p>
-          <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
+          <h1 className="text-4xl md:text-5xl font-black text-white leading-tight mb-6">
             The Trade That<br />
             <span className="gradient-text">Built Everything</span>
           </h1>
         </div>
 
         {/* Photo + intro */}
-        <div className="flex items-start gap-8 mb-16">
+        <div className="animate-in animate-delay-1 flex items-start gap-8 mb-16">
           <div className="flex-shrink-0 w-28 h-28 rounded-2xl overflow-hidden">
             <Image
-              src="/founder.jpg"
+              src="/founder.webp"
               alt="Shehzad Ahmed"
               width={112}
               height={112}
@@ -38,7 +40,7 @@ export default function FounderPage() {
         </div>
 
         {/* Story body */}
-        <div className="prose prose-invert max-w-none space-y-8 text-gray-300 leading-relaxed text-[17px]">
+        <div className="animate-in prose prose-invert max-w-none space-y-8 text-gray-300 leading-relaxed text-[17px]">
 
           <p>
             My father was a stockbroker. Before I could make sense of most subjects at school,
@@ -95,7 +97,7 @@ export default function FounderPage() {
             You can just get on with the work.
           </p>
 
-          <h2 className="text-white text-2xl font-bold mt-12 mb-4">The Trade</h2>
+          <h2 className="text-white text-2xl font-black mt-12 mb-4">The Trade</h2>
 
           <p>
             In January 2026, I made the largest trade of my life. A leveraged position on silver
@@ -130,7 +132,7 @@ export default function FounderPage() {
             I wanted to profit from its decline. Instead, I got an education.
           </p>
 
-          <h2 className="text-white text-2xl font-bold mt-12 mb-4">What the Loss Settled</h2>
+          <h2 className="text-white text-2xl font-black mt-12 mb-4">What the Loss Settled</h2>
 
           <p>
             The honest version: I already knew how to build a system. I had already taught
@@ -176,7 +178,7 @@ export default function FounderPage() {
             capital and waited to see if the model was honest about itself.
           </p>
 
-          <h2 className="text-white text-2xl font-bold mt-12 mb-4">October 2025</h2>
+          <h2 className="text-white text-2xl font-black mt-12 mb-4">October 2025</h2>
 
           <p>
             To understand what happened in October 2025, you need the context of the year
@@ -232,7 +234,7 @@ export default function FounderPage() {
             what I believed — and did not need me to be awake.
           </p>
 
-          <h2 className="text-white text-2xl font-bold mt-12 mb-4">The Blessing I Did Not Earn</h2>
+          <h2 className="text-white text-2xl font-black mt-12 mb-4">The Blessing I Did Not Earn</h2>
 
           <p>
             Most mornings I wake up and the bots have made money. It is not a small feeling.
@@ -293,7 +295,7 @@ export default function FounderPage() {
             That is all any of us can be.
           </p>
 
-          <h2 className="text-white text-2xl font-bold mt-12 mb-4">The Halal Problem</h2>
+          <h2 className="text-white text-2xl font-black mt-12 mb-4">The Halal Problem</h2>
 
           <p>
             The bots use margin. Leveraged trading. Every time someone sees how much I am
@@ -316,7 +318,7 @@ export default function FounderPage() {
             That the problem was not finance. It was the assumption buried inside it.
           </p>
 
-          <h2 className="text-white text-2xl font-bold mt-12 mb-4">Where Baraka Came From</h2>
+          <h2 className="text-white text-2xl font-black mt-12 mb-4">Where Baraka Came From</h2>
 
           <p>
             There is a particular kind of luck that comes from being in the right classroom.
@@ -354,7 +356,7 @@ export default function FounderPage() {
             inventing something but uncovering it.
           </p>
 
-          <h2 className="text-white text-2xl font-bold mt-12 mb-4">The Partnership I Did Not Plan</h2>
+          <h2 className="text-white text-2xl font-black mt-12 mb-4">The Partnership I Did Not Plan</h2>
 
           <p>
             I went to see the head of IUB&apos;s Finance department to discuss one of my research papers.
@@ -395,7 +397,7 @@ export default function FounderPage() {
             Some things you plan. Some things arrive.
           </p>
 
-          <h2 className="text-white text-2xl font-bold mt-12 mb-4">What We Are Building</h2>
+          <h2 className="text-white text-2xl font-black mt-12 mb-4">What We Are Building</h2>
 
           <p>
             Web3 is becoming the infrastructure layer of global finance. Every transaction,
@@ -432,8 +434,8 @@ export default function FounderPage() {
         </div>
 
         {/* CTA */}
-        <div className="mt-20 bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center">
-          <h3 className="text-2xl font-bold text-white mb-3">Work With Us</h3>
+        <div className="animate-in mt-20 bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center">
+          <h3 className="text-2xl font-black text-white mb-3">Work With Us</h3>
           <p className="text-gray-400 mb-6">
             Standard minimum $6,000 — or start with a $1,000 seven-month pilot to verify
             returns before committing more.
@@ -441,7 +443,7 @@ export default function FounderPage() {
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gold hover:bg-gold-dark text-black font-semibold rounded-xl transition-all hover:shadow-[0_6px_24px_rgba(248,172,7,0.35)] hover:-translate-y-0.5"
             >
               Get in Touch <ArrowRight size={16} />
             </Link>

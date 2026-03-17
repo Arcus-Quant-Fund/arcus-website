@@ -151,11 +151,13 @@ const platforms = [
 ];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] pt-24 px-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#0a0a0a] bg-grid pt-24 px-6 relative overflow-hidden">
+      <div className="glow-orb-gold" style={{ top: "-200px", right: "-100px" }} />
+      <div className="glow-orb-blue" style={{ bottom: "400px", left: "-200px" }} />
+      <div className="max-w-4xl mx-auto relative">
         {/* Header */}
-        <div className="mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+        <div className="mb-16 animate-in">
+          <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
             Our <span className="gradient-text">Strategies</span>
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl">
@@ -165,8 +167,8 @@ const platforms = [
         </div>
 
         {/* Evolution callout */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-10">
-          <h2 className="text-white font-bold text-lg mb-3">Built in a Hard Market First</h2>
+        <div className="animate-in bg-gray-900 border border-gray-800 rounded-2xl p-7 mb-10">
+          <h2 className="text-white font-black text-lg mb-3">Built in a Hard Market First</h2>
           <p className="text-gray-400 leading-relaxed">
             Our systematic trading began on the Dhaka Stock Exchange — a market that has been in structural
             decline for over 20 years, with no short selling, T+2 settlement delays, and no broker API
@@ -190,8 +192,8 @@ const platforms = [
 
         {/* Strategy cards */}
         <div className="flex flex-col gap-8 mb-16">
-          {strategies.map((s) => (
-            <div key={s.name} className="bg-gray-900 border border-gray-800 rounded-2xl p-7 hover:border-gold/30 transition-colors">
+          {strategies.map((s, i) => (
+            <div key={s.name} className={`animate-in animate-delay-${(i % 4) + 1} bg-gray-900 border border-gray-800 rounded-2xl p-7 hover:border-gold/25 hover:-translate-y-1 transition-all duration-300`}>
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
@@ -273,9 +275,9 @@ const platforms = [
         </div>
 
         {/* Coming Soon */}
-        <div className="mb-16">
+        <div className="animate-in mb-16">
           <div className="flex items-center gap-3 mb-2">
-            <h2 className="text-white font-bold text-xl">In Development</h2>
+            <h2 className="text-white font-black text-xl">In Development</h2>
             <span className="px-2.5 py-0.5 rounded-full border text-xs font-medium bg-amber-500/10 text-amber-400 border-amber-500/20">
               Coming Soon
             </span>
@@ -285,7 +287,7 @@ const platforms = [
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {comingSoon.map((s) => (
-              <div key={s.name} className="bg-gray-900/60 border border-gray-800 rounded-xl p-5 hover:border-amber-500/20 transition-colors">
+              <div key={s.name} className="bg-gray-900/60 border border-gray-800 rounded-xl p-5 hover:border-gold/25 hover:-translate-y-1 transition-all duration-300">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
                     {s.icon}
@@ -310,7 +312,7 @@ const platforms = [
         </div>
 
         {/* Bespoke / Broker-Agnostic section */}
-        <div className="mb-16">
+        <div className="animate-in mb-16">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
               <Globe size={24} className="text-gold" />
@@ -330,7 +332,7 @@ const platforms = [
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {platforms.map((p) => (
-              <div key={p.name} className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gold/20 transition-colors">
+              <div key={p.name} className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gold/25 hover:-translate-y-1 transition-all duration-300">
                 <div className="text-white font-semibold text-sm mb-1">{p.name}</div>
                 <div className="text-gray-500 text-xs mb-2">{p.type}</div>
                 <div className="flex flex-wrap gap-1">
@@ -348,14 +350,14 @@ const platforms = [
         </div>
 
         {/* CTA */}
-        <div className="bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center mb-16">
-          <h3 className="text-2xl font-bold text-white mb-3">Want a Bespoke Setup?</h3>
+        <div className="animate-in bg-gold/10 border border-gold/20 rounded-2xl p-8 text-center mb-16">
+          <h3 className="text-2xl font-black text-white mb-3">Want a Bespoke Setup?</h3>
           <p className="text-gray-400 mb-6">
             Tell us your broker and capital size. We&apos;ll let you know if we can configure a strategy for your account.
           </p>
           <Link
             href="/contact"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gold hover:bg-gold-dark text-white font-semibold rounded-xl transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gold hover:bg-gold-dark text-black font-semibold rounded-xl transition-all hover:shadow-[0_6px_24px_rgba(248,172,7,0.35)] hover:-translate-y-0.5"
           >
             Get in Touch <ArrowRight size={16} />
           </Link>
